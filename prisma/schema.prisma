@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Setting {
+  id             Int       @id @default(autoincrement())
+  tripStartDate  DateTime?
+  scheduleLocked Boolean   @default(false)
+  skippedSlots   String    @default("[]")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("settings")
+}
+
+model Person {
+  id        Int      @id @default(autoincrement())
+  name      String
+  coupleId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cookSlots   CookSlot[]
+  stores      Store[]
+  stapleItems StapleItem[]
+
+  @@map("people")
+}
+
+model Store {
+  id               Int      @id @default(autoincrement())
+  name             String
+  assignedPersonId Int?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  assignedPerson Person?        @relation(fields: [assignedPersonId], references: [id], onDelete: SetNull)
+  shoppingItems  ShoppingItem[]
+
+  @@map("stores")
+}
+
+model CookSlot {
+  id       Int    @id @default(autoincrement())
+  day      Int
+  type     String
+  personId Int
+
+  person Person @relation(fields: [personId], references: [id])
+
+  @@unique([day, type, personId])
+  @@map("cook_slots")
+}
+
+model Meal {
+  id               Int      @id @default(autoincrement())
+  day              Int
+  type             String
+  name             String?
+  recipeUrl        String?
+  originalServings Int?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  ingredients MealIngredient[]
+
+  @@unique([day, type])
+  @@map("meals")
+}
+
+model MealIngredient {
+  id        Int     @id @default(autoincrement())
+  mealId    Int
+  name      String
+  quantity  Float?
+  unit      String?
+  sortOrder Int     @default(0)
+
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@map("meal_ingredients")
+}
+
+model ShoppingItem {
+  id        Int     @id @default(autoincrement())
+  name      String
+  quantity  Float?
+  unit      String?
+  category  String?
+  source    String  @default("manual")
+  storeId   Int?
+  sortOrder Int     @default(0)
+  isChecked Boolean @default(false)
+
+  store Store? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+
+  @@map("shopping_items")
+}
+
+model StapleItem {
+  id               Int     @id @default(autoincrement())
+  name             String
+  category         String?
+  assignedPersonId Int?
+  isChecked        Boolean @default(false)
+  isCustom         Boolean @default(false)
+  sortOrder        Int     @default(0)
+
+  assignedPerson Person? @relation(fields: [assignedPersonId], references: [id], onDelete: SetNull)
+
+  @@map("staple_items")
+}
+
+model IngredientSuggestion {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  @@map("ingredient_suggestions")
+}
+
+model StapleSuggestion {
+  id       Int    @id @default(autoincrement())
+  name     String
+  category String
+
+  @@map("staple_suggestions")
+}
