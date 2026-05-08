@@ -1,0 +1,51 @@
+generator client {
+  provider     = "prisma-client-js"
+  output       = "../src/generated/prisma/client"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model JournalEntry {
+  id              Int           @id @default(autoincrement())
+  date            String
+  timeOfDay       String?
+  content         String
+  mood            String?
+  moodScore       Int?
+  summary         String?
+  themes          String        @default("[]")
+  sessionComplete Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  messages        ChatMessage[]
+
+  @@map("journal_entries")
+}
+
+model ChatMessage {
+  id        Int          @id @default(autoincrement())
+  entryId   Int
+  role      String
+  content   String
+  order     Int          @default(0)
+  createdAt DateTime     @default(now())
+  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model UserProfile {
+  id                 Int       @id @default(autoincrement())
+  summary            String?
+  recurringThemes    String    @default("[]")
+  behavioralPatterns String    @default("[]")
+  moodTrends         String    @default("[]")
+  goalsMentioned     String    @default("[]")
+  peopleMentioned    String    @default("[]")
+  entriesAnalyzed    Int       @default(0)
+  lastUpdatedAt      DateTime?
+
+  @@map("user_profiles")
+}
