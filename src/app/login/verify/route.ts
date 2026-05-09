@@ -4,9 +4,10 @@ import { verifyToken } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token')
+  const base = process.env.APP_URL ?? 'http://localhost:3000'
 
   if (!token || !verifyToken(token)) {
-    return NextResponse.redirect(new URL('/login?error=expired', request.url))
+    return NextResponse.redirect(`${base}/login?error=expired`)
   }
 
   const jar = await cookies()
@@ -17,5 +18,5 @@ export async function GET(request: NextRequest) {
     path: '/',
   })
 
-  return NextResponse.redirect(new URL('/journal', request.url))
+  return NextResponse.redirect(`${base}/journal`)
 }
