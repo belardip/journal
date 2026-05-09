@@ -8,7 +8,7 @@ export async function sendMagicLinkAction() {
   if (!allowedEmail) throw new Error('ALLOWED_EMAIL not set')
 
   const token = generateToken()
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+  const baseUrl = process.env.APP_URL ?? 'http://localhost:3000'
   const link = `${baseUrl}/login/verify?token=${token}`
 
   const resend = new Resend(process.env.RESEND_API_KEY)
