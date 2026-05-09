@@ -32,13 +32,10 @@ export default async function AlbumsPage() {
     <div className="space-y-10">
       {/* Current batch */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h2 className="text-lg font-semibold">
             {latestBatch ? (latestBatch.prompt ? `"${latestBatch.prompt}"` : 'Latest picks') : 'No picks yet'}
           </h2>
-          <Button asChild size="sm">
-            <Link href="/albums/recommend">New picks</Link>
-          </Button>
         </div>
 
         {currentAlbums.length === 0 ? (
