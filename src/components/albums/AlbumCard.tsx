@@ -7,7 +7,7 @@ import { ratingColor } from '@/lib/albums'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Star, SkipForward, ChevronDown, ChevronUp } from 'lucide-react'
+import { Star, SkipForward, ChevronDown, ChevronUp, X } from 'lucide-react'
 
 type Album = {
   id: number
@@ -96,12 +96,21 @@ export function AlbumCard({ album, compact = false }: { album: Album; compact?: 
           <span className={`text-xs font-semibold shrink-0 ${ratingColor(album.rating)}`}>{album.rating}/10</span>
         )}
         {isRecommended && (
-          <button
-            onClick={() => setExpanded(e => !e)}
-            className="text-muted-foreground hover:text-foreground shrink-0"
-          >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setExpanded(e => !e)}
+              className="text-muted-foreground hover:text-foreground p-1"
+            >
+              {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            <button
+              disabled={isPending}
+              onClick={() => start(async () => { await skipAlbumAction(album.id) })}
+              className="text-muted-foreground hover:text-destructive p-1 disabled:opacity-40"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         )}
         {expanded && isRecommended && (
           <div className="absolute mt-24 z-10 bg-card border rounded-lg shadow-lg p-3 w-64">
