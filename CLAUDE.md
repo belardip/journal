@@ -1,97 +1,68 @@
-# Next Starter — Claude Instructions
+# Journal — Claude Instructions
+
+**URL**: https://www.tenderbones.org  
+**Auth**: Magic link — click "Send me a login link", check email, click link
 
 ## Stack
-- **Next.js 16** (App Router, Server Components, Server Actions)
-- **shadcn/ui** with Radix/Nova preset — always use shadcn components
-- **Tailwind CSS v4** (`@import "tailwindcss"` syntax, no `tailwind.config.ts`)
-- **Prisma 7** + `@prisma/adapter-libsql` for SQLite
-- **Anthropic SDK** (`@anthropic-ai/sdk`) for AI features
+Next.js 16 (App Router), TypeScript, Prisma 7 + LibSQL/SQLite, shadcn/ui, Tailwind v4, Anthropic SDK, Resend (email)
 
----
+## Production Server
+- **App location**: `/var/www/journal`
+- **Database**: `/var/www/journal/prod.db` (SQLite)
+- **PM2 process**: `journal` on port 3002 — `pm2 restart journal`
+- **Logs**: `pm2 logs journal`
+- **Nginx config**: `/etc/nginx/sites-enabled/journal-tenderbones`
 
-## ALWAYS Use shadcn Components
+## Deploying
 
-Never write raw HTML form elements. Every common UI primitive has a shadcn component installed in `src/components/ui/`. Use them:
-
-| Need | Component | Import |
-|------|-----------|--------|
-| Text input | `<Input>` | `@/components/ui/input` |
-| Multiline input | `<Textarea>` | `@/components/ui/textarea` |
-| Button | `<Button>` | `@/components/ui/button` |
-| Dropdown select | `<Select>` | `@/components/ui/select` |
-| Checkbox | `<Checkbox>` | `@/components/ui/checkbox` |
-| Form label | `<Label>` | `@/components/ui/label` |
-| Card container | `<Card>` | `@/components/ui/card` |
-| Pill/tag | `<Badge>` | `@/components/ui/badge` |
-| Modal | `<Dialog>` | `@/components/ui/dialog` |
-| Date picker | `<Calendar>` + `<Popover>` | `@/components/ui/calendar` + popover |
-| Hover menu | `<DropdownMenu>` | `@/components/ui/dropdown-menu` |
-| Mobile drawer | `<Sheet>` | `@/components/ui/sheet` |
-| Divider | `<Separator>` | `@/components/ui/separator` |
-| Tabs | `<Tabs>` | `@/components/ui/tabs` |
-| Toast | `toast()` from `sonner` | already wired in layout |
-
-If you need a component not yet installed: `npx shadcn@latest add <name> --yes`
-
----
-
-## Prisma 7 — Critical Breaking Changes
-
-Prisma 7 removed the built-in database engine. You MUST use a driver adapter. The setup in `src/lib/db.ts` is correct — do not change `new PrismaClient({ adapter })` to `new PrismaClient()` or `new PrismaClient({ datasourceUrl })`, both will throw.
-
-```ts
-// CORRECT
-import { PrismaLibSql } from '@prisma/adapter-libsql'
-const adapter = new PrismaLibSql({ url: process.env.DATABASE_URL! })
-export const db = new PrismaClient({ adapter })
-
-// WRONG — will throw at runtime
-export const db = new PrismaClient()
-export const db = new PrismaClient({ datasourceUrl: '...' })
+```bash
+bash deploy.sh "commit message"
 ```
 
-Same applies in seed scripts — import `PrismaLibSql` and pass the adapter.
+Commits, pushes to git, pulls on server, **builds on server**, restarts PM2.
 
----
+### ⚠️ Do NOT build locally and upload `.next/`
 
-## Tailwind CSS v4
+Next.js 16 uses Turbopack for production builds. Turbopack hashes module IDs using **absolute file paths** — Windows builds produce different hashes than Linux. Build on server only.
 
-No `tailwind.config.ts`. Theme is defined in `src/app/globals.css` using `@theme inline` with CSS variables. To add custom colors or tokens, edit the `@theme inline` block in globals.css — do not create a tailwind config file.
+### After schema changes
 
----
+SSH in and run manually before deploying:
 
-## Server Actions Pattern
-
-All database mutations are Server Actions in `src/app/actions/`. Pattern:
-
-```ts
-'use server'
-import { revalidatePath } from 'next/cache'
-import { db } from '@/lib/db'
-
-export async function myAction(data: string) {
-  await db.myModel.create({ data: { field: data } })
-  revalidatePath('/my-page')
-}
+```bash
+DATABASE_URL='file:/var/www/journal/prod.db' npx prisma db push
+DATABASE_URL='file:/var/www/journal/prod.db' npx prisma generate
 ```
 
-Call them from Client Components inside `startTransition` for non-blocking UI.
+## Auth
 
----
+Magic link flow:
+1. `/login` — user clicks "Send me a login link"
+2. Server generates HMAC-signed token (15-min TTL), sends email via Resend
+3. `/login/verify?token=xxx` — verifies token, sets `www_auth=authenticated` cookie (30 days)
+4. Middleware checks `www_auth` cookie on all routes except `/login`
 
-## File Conventions
+Cookie isolation: `www_auth` cookie has no `domain` attribute, so it's scoped to `www.tenderbones.org` only — cannot access `cottage.tenderbones.org`.
 
-- Server components: no directive (default)
-- Client components: `'use client'` at top
-- Server actions: `'use server'` at top, live in `src/app/actions/`
-- Shared types: define inline or in `src/lib/types.ts`
-- `async params` in dynamic routes: `const { id } = await params` (Next.js 16)
+### Required env vars on server
 
----
+```
+DATABASE_URL=file:/var/www/journal/prod.db
+ANTHROPIC_API_KEY=...
+MAGIC_LINK_SECRET=...  # openssl rand -base64 32
+RESEND_API_KEY=re_...  # from resend.com
+ALLOWED_EMAIL=belardip@gmail.com
+NEXT_PUBLIC_BASE_URL=https://www.tenderbones.org
+```
 
-## Environment Variables
+### Resend setup
 
-- `.env` — Prisma CLI only (`DATABASE_URL` for `prisma db push`)
-- `.env.local` — runtime secrets (`DATABASE_URL`, `ANTHROPIC_API_KEY`)
+- Account at resend.com (free: 100 emails/day, 3000/month)
+- Add domain `tenderbones.org` → add the DNS TXT + MX records it gives you
+- Once verified, emails send from `noreply@tenderbones.org`
+- API key goes in `.env.local` on server as `RESEND_API_KEY`
 
-Both files are gitignored. Copy `.env.example` and `.env.local.example` to get started.
+**Do not use `redirect()` in server actions called from `useTransition`** — return `{ success: true }` and navigate on the client instead.
+
+## Prisma 7 — Critical
+Always use the adapter. Never `new PrismaClient()` without it. See `src/lib/db.ts`.

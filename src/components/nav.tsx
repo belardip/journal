@@ -17,6 +17,8 @@ export function Nav() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
+  if (pathname.startsWith('/login')) return null
+
   return (
     <header className="border-b bg-card shadow-sm sticky top-0 z-40">
       <div className="container mx-auto px-4 max-w-3xl">
