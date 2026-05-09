@@ -23,29 +23,15 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-1">
-          <div className="text-5xl mb-4">📖</div>
-          <h1 className="text-2xl font-bold">Journal</h1>
-          <p className="text-muted-foreground text-sm">Personal journal with AI companion.</p>
-        </div>
-
+      <div className="w-full max-w-xs space-y-3">
         {expired && !sent && (
-          <div className="rounded-lg bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive text-center">
-            That link has expired. Send a new one below.
-          </div>
+          <p className="text-sm text-destructive text-center">That link expired. Send a new one.</p>
         )}
-
         {sent ? (
-          <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-4 text-sm text-green-800 text-center space-y-1">
-            <p className="font-medium">Check your email</p>
-            <p className="text-green-700">A login link was sent to your inbox. It expires in 15 minutes.</p>
-          </div>
+          <p className="text-sm text-muted-foreground text-center">Check your email — link expires in 15 minutes.</p>
         ) : (
-          <div className="space-y-3">
-            {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
-            )}
+          <>
+            {error && <p className="text-sm text-destructive text-center">{error}</p>}
             <button
               onClick={handleSend}
               disabled={isPending}
@@ -53,7 +39,7 @@ function LoginForm() {
             >
               {isPending ? 'Sending…' : 'Send me a login link'}
             </button>
-          </div>
+          </>
         )}
       </div>
     </div>
