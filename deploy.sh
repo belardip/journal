@@ -15,7 +15,7 @@ echo "→ Deploying on server..."
 ssh $SERVER "cd $REMOTE_DIR \
   && git pull \
   && git diff HEAD~1 --name-only 2>/dev/null | grep -q 'package' && npm install --omit=dev || true \
-  && git diff HEAD~1 --name-only 2>/dev/null | grep -q 'prisma/' && DATABASE_URL='file:$REMOTE_DIR/prod.db' npx prisma db push && DATABASE_URL='file:$REMOTE_DIR/prod.db' npx prisma generate || true \
+  && DATABASE_URL='file:$REMOTE_DIR/prod.db' npx prisma generate \
   && NODE_OPTIONS='--max-old-space-size=3000' npm run build \
   && pm2 restart journal \
   && echo '✓ Deploy complete'"
