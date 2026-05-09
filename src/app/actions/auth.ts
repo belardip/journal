@@ -13,7 +13,7 @@ export async function sendMagicLinkAction() {
 
   const resend = new Resend(process.env.RESEND_API_KEY)
   const { error } = await resend.emails.send({
-    from: 'noreply@tenderbones.org',
+    from: 'onboarding@resend.dev',
     to: allowedEmail,
     subject: 'Your journal login link',
     html: `
