@@ -49,3 +49,61 @@ model UserProfile {
 
   @@map("user_profiles")
 }
+
+model Album {
+  id                Int                  @id @default(autoincrement())
+  batchId           Int?
+  title             String
+  artist            String
+  year              Int?
+  genre             String?
+  artworkUrl        String?
+  itunesId          String?
+  status            String               @default("recommended")
+  rating            Int?
+  notes             String?
+  recommendedReason String?
+  listenedAt        DateTime?
+  createdAt         DateTime             @default(now())
+  batch             RecommendationBatch? @relation(fields: [batchId], references: [id])
+
+  @@map("albums")
+}
+
+model TasteProfile {
+  id               Int       @id @default(autoincrement())
+  summary          String?
+  favoriteGenres   String    @default("[]")
+  favoriteArtists  String    @default("[]")
+  preferredDecades String    @default("[]")
+  moodPreferences  String    @default("[]")
+  dislikedPatterns String    @default("[]")
+  albumsAnalyzed   Int       @default(0)
+  isUpdating       Boolean   @default(false)
+  lastUpdatedAt    DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@map("taste_profiles")
+}
+
+model RecommendationBatch {
+  id        Int                 @id @default(autoincrement())
+  prompt    String?
+  createdAt DateTime            @default(now())
+  albums    Album[]
+  logs      RecommendationLog[]
+
+  @@map("recommendation_batches")
+}
+
+model RecommendationLog {
+  id        Int                 @id @default(autoincrement())
+  batchId   Int
+  level     String
+  event     String
+  detail    String              @default("{}")
+  createdAt DateTime            @default(now())
+  batch     RecommendationBatch @relation(fields: [batchId], references: [id])
+
+  @@map("recommendation_logs")
+}
