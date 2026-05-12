@@ -55,7 +55,7 @@ export async function rateAlbumAction(id: number, rating: number, notes: string)
     data: { status: 'listened', rating, notes: notes || null, listenedAt: new Date() },
   })
   revalidatePath('/albums')
-  await updateTasteProfileAction()
+  updateTasteProfileAction().catch(console.error)
 }
 
 export async function skipAlbumAction(id: number) {

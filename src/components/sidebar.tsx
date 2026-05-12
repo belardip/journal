@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { BookOpen, Disc3, Plus, Clock, User2, ScrollText } from 'lucide-react'
+import { BookOpen, Disc3, Plus, Clock, User2, ScrollText, Sparkles } from 'lucide-react'
 
 type NavItem = {
   label: string
@@ -21,6 +21,9 @@ const apps: NavItem[] = [
     href: '/journal',
     match: (p: string) => p.startsWith('/journal'),
     action: { href: '/journal/new', label: 'New entry' },
+    subLinks: [
+      { href: '/journal/summary', label: 'Summary', icon: Sparkles },
+    ],
   },
   {
     label: 'Albums',
