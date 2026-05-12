@@ -44,6 +44,7 @@ model UserProfile {
   moodTrends         String    @default("[]")
   goalsMentioned     String    @default("[]")
   peopleMentioned    String    @default("[]")
+  advice             String    @default("[]")
   entriesAnalyzed    Int       @default(0)
   lastUpdatedAt      DateTime?
 

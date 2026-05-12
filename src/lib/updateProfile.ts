@@ -41,9 +41,10 @@ export async function runProfileUpdate(entryId: number) {
     '  "behavioral_patterns": ["pattern1", "pattern2"],\n' +
     '  "mood_trends": ["trend1", "trend2"],\n' +
     '  "goals_mentioned": ["goal1", "goal2"],\n' +
-    '  "people_mentioned": ["Name (relationship/context)"]\n' +
+    '  "people_mentioned": ["Name (relationship/context)"],\n' +
+    '  "advice": ["specific actionable thing to try, grounded in their patterns and goals"]\n' +
     '}\n\n' +
-    'Be specific and grounded in actual evidence from their writing. Return ONLY the JSON object, no other text.'
+    'For advice: 3-5 concrete, specific suggestions based on what the journal reveals — things to try, habits to build, conversations to have, patterns to interrupt. Make them feel personal, not generic. Be specific and grounded in actual evidence from their writing. Return ONLY the JSON object, no other text.'
 
   const profileMsg = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -68,6 +69,7 @@ export async function runProfileUpdate(entryId: number) {
     moodTrends: JSON.stringify(profileData.mood_trends ?? []),
     goalsMentioned: JSON.stringify(profileData.goals_mentioned ?? []),
     peopleMentioned: JSON.stringify(profileData.people_mentioned ?? []),
+    advice: JSON.stringify(profileData.advice ?? []),
     entriesAnalyzed: recentEntries.length,
     lastUpdatedAt: new Date(),
   }

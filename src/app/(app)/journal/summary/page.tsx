@@ -26,6 +26,7 @@ const sections = [
   { key: 'peopleMentioned', label: 'Relationships', icon: '👥' },
   { key: 'goalsMentioned', label: 'Goals', icon: '🎯' },
   { key: 'behavioralPatterns', label: 'Patterns', icon: '🧠' },
+  { key: 'advice', label: 'Things to Try', icon: '💡' },
 ] as const
 
 export default async function JournalSummaryPage() {
