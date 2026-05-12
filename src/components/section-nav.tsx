@@ -30,7 +30,7 @@ export function SectionNav() {
   if (!section) return null
 
   return (
-    <nav className="flex gap-1 border-b mb-6 -mx-6 px-6">
+    <nav className="flex gap-1 border-b mb-6 -mx-4 px-4 md:-mx-6 md:px-6 overflow-x-auto">
       {section.links.map(({ href, label, exact }) => {
         const active = exact ? pathname === href : pathname.startsWith(href)
         return (

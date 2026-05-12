@@ -36,11 +36,11 @@ const apps: NavItem[] = [
   },
 ]
 
-export function Sidebar() {
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-52 shrink-0 border-r bg-card flex flex-col min-h-screen sticky top-0 h-screen">
+    <>
       <div className="px-4 py-5 border-b">
         <span className="font-semibold text-sm tracking-tight text-primary">tenderbones</span>
       </div>
@@ -51,6 +51,7 @@ export function Sidebar() {
             <div key={href}>
               <Link
                 href={href}
+                onClick={onNavigate}
                 className={cn(
                   'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                   active
@@ -65,6 +66,7 @@ export function Sidebar() {
                 <div className="mt-0.5 ml-2 space-y-0.5">
                   <Link
                     href={action.href}
+                    onClick={onNavigate}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   >
                     <Plus className="h-3 w-3" />
@@ -74,6 +76,7 @@ export function Sidebar() {
                     <Link
                       key={sub.href}
                       href={sub.href}
+                      onClick={onNavigate}
                       className={cn(
                         'flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors',
                         pathname.startsWith(sub.href)
@@ -91,6 +94,14 @@ export function Sidebar() {
           )
         })}
       </nav>
+    </>
+  )
+}
+
+export function Sidebar() {
+  return (
+    <aside className="hidden md:flex w-52 shrink-0 border-r bg-card flex-col min-h-screen sticky top-0 h-screen">
+      <SidebarNav />
     </aside>
   )
 }
