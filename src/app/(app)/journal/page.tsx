@@ -1,11 +1,12 @@
 export const dynamic = 'force-dynamic'
 
 import { db } from '@/lib/db'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatEntryDate } from '@/lib/chat'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { TodayBanner } from '@/components/today-banner'
 
 const timeIcons: Record<string, string> = {
   morning: '🌅',
@@ -32,18 +33,10 @@ export default async function JournalPage() {
     return (timeOrder[a.timeOfDay ?? ''] ?? 5) - (timeOrder[b.timeOfDay ?? ''] ?? 5)
   })
 
-  const today = new Date().toISOString().split('T')[0]
-  const hasTodayEntry = entries[0]?.date === today
-
   return (
     <div>
-      {!hasTodayEntry && entries.length > 0 && (
-        <div className="flex items-center gap-3 bg-muted/50 border rounded-lg px-4 py-3 mb-6 text-sm">
-          <span className="text-muted-foreground">You haven't written today yet.</span>
-          <Button asChild size="sm" className="ml-auto">
-            <Link href="/journal/new">Write now</Link>
-          </Button>
-        </div>
+      {entries.length > 0 && (
+        <TodayBanner entryDates={entries.map(e => e.date)} />
       )}
 
       {entries.length === 0 ? (
