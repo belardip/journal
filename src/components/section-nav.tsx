@@ -31,24 +31,26 @@ export function SectionNav() {
   if (!section) return null
 
   return (
-    <nav className="flex gap-1 border-b mb-6 -mx-4 px-4 md:-mx-6 md:px-6 overflow-x-auto">
-      {section.links.map(({ href, label, exact }) => {
-        const active = exact ? pathname === href : pathname.startsWith(href)
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              'px-3 py-2 text-sm border-b-2 -mb-px transition-colors',
-              active
-                ? 'border-foreground font-medium text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {label}
-          </Link>
-        )
-      })}
-    </nav>
+    <div className="border-b mb-6 -mx-4 md:-mx-6">
+      <nav className="flex gap-1 overflow-x-auto px-4 md:px-6">
+        {section.links.map(({ href, label, exact }) => {
+          const active = exact ? pathname === href : pathname.startsWith(href)
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'px-3 py-2 text-sm border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
+                active
+                  ? 'border-foreground font-medium text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {label}
+            </Link>
+          )
+        })}
+      </nav>
+    </div>
   )
 }
