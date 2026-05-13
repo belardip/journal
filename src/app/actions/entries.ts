@@ -18,7 +18,7 @@ export async function finalizeEntryAction(id: number) {
     data: { sessionComplete: true },
   })
 
-  await runProfileUpdate(id)
+  runProfileUpdate(id).catch(console.error)
 
   revalidatePath('/journal')
   revalidatePath(`/journal/${id}`)

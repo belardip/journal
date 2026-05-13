@@ -32,7 +32,7 @@ export function SectionNav() {
 
   return (
     <div className="border-b mb-6 -mx-4 md:-mx-6">
-      <nav className="flex gap-1 overflow-x-auto px-4 md:px-6">
+      <nav className="flex gap-1 overflow-x-auto scrollbar-none px-4 md:px-6">
         {section.links.map(({ href, label, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href)
           return (
@@ -40,7 +40,7 @@ export function SectionNav() {
               key={href}
               href={href}
               className={cn(
-                'px-3 py-2 text-sm border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
+                'px-3 py-2 text-sm border-b-2 translate-y-px transition-colors whitespace-nowrap shrink-0',
                 active
                   ? 'border-foreground font-medium text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
