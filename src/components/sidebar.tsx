@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { BookOpen, Disc3, Plus, Clock, User2, Sparkles, LogOut } from 'lucide-react'
+import { BookOpen, Disc3, TrendingUp, Plus, Clock, User2, Sparkles, LogOut } from 'lucide-react'
 import { logoutAllAction } from '@/app/actions/auth'
 
 type NavItem = {
@@ -25,6 +25,13 @@ const apps: NavItem[] = [
     subLinks: [
       { href: '/journal/summary', label: 'Summary', icon: Sparkles },
     ],
+  },
+  {
+    label: 'Stocks',
+    icon: TrendingUp,
+    href: '/stocks',
+    match: (p: string) => p.startsWith('/stocks'),
+    action: { href: '/stocks', label: 'Portfolio' },
   },
   {
     label: 'Albums',

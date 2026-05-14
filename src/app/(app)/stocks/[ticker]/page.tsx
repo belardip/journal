@@ -1,0 +1,143 @@
+import { Suspense } from 'react'
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
+import { db } from '@/lib/db'
+import { getQuote, getHistory, type RangeKey } from '@/lib/stocks'
+import { anthropic } from '@/lib/ai'
+import { StockChart } from './stock-chart'
+
+const VALID_RANGES: RangeKey[] = ['1mo', '3mo', '6mo', '1y', '5y']
+
+function pct(n: number) {
+  return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
+}
+function money(n: number) {
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+}
+
+async function AiBreakdown({ ticker, name, changePercent, range }: {
+  ticker: string
+  name: string
+  changePercent: number
+  range: RangeKey
+}) {
+  const rangeLabel: Record<RangeKey, string> = {
+    '1mo': '1 month', '3mo': '3 months', '6mo': '6 months', '1y': '1 year', '5y': '5 years',
+  }
+
+  const msg = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 700,
+    tools: [{ type: 'web_search_20250305' as 'web_search_20250305', name: 'web_search' }],
+    messages: [{
+      role: 'user',
+      content: `The stock ${ticker} (${name}) is ${changePercent >= 0 ? 'up' : 'down'} ${Math.abs(changePercent).toFixed(1)}% over the last ${rangeLabel[range]}.
+
+Search for recent news and write me a plain-English breakdown (4-6 sentences):
+1. What's been driving the price movement recently
+2. What this company actually does (one sentence, simple)
+3. One key number that matters right now and what it means in plain English — avoid jargon, or explain any term you use in plain language
+
+Be direct and specific. Don't be vague or cheerful.`,
+    }],
+  })
+
+  const text = msg.content.find(b => b.type === 'text')?.text ?? ''
+
+  return (
+    <div className="rounded-lg border bg-muted/40 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">What&apos;s going on</p>
+      <p className="text-sm leading-relaxed whitespace-pre-line">{text}</p>
+    </div>
+  )
+}
+
+export default async function StockPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ ticker: string }>
+  searchParams: Promise<{ range?: string }>
+}) {
+  const { ticker } = await params
+  const { range: rawRange } = await searchParams
+  const range: RangeKey = VALID_RANGES.includes(rawRange as RangeKey) ? (rawRange as RangeKey) : '1mo'
+
+  const holding = await db.stockHolding.findUnique({ where: { ticker } })
+  if (!holding) notFound()
+
+  const [quote, history] = await Promise.all([
+    getQuote(ticker),
+    getHistory(ticker, range),
+  ])
+
+  const marketValue = quote.price * holding.shares
+  const costBasis = holding.avgPrice * holding.shares
+  const gainLoss = marketValue - costBasis
+  const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0
+  const positive = quote.changePercent >= 0
+
+  // Change over the selected range using history
+  const rangeChange = history.length >= 2
+    ? ((history[history.length - 1].close - history[0].close) / history[0].close) * 100
+    : quote.changePercent
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div className="flex items-center gap-2">
+        <Link href="/stocks" className="text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronLeft className="h-4 w-4" />
+        </Link>
+        <div>
+          <h1 className="text-lg font-semibold leading-tight">{ticker}</h1>
+          <p className="text-xs text-muted-foreground">{quote.name}</p>
+        </div>
+      </div>
+
+      {/* Price header */}
+      <div className="flex items-baseline gap-3">
+        <span className="text-3xl font-bold">{money(quote.price)}</span>
+        <span className={`text-sm font-medium ${positive ? 'text-green-600' : 'text-red-500'}`}>
+          {pct(quote.changePercent)} today
+        </span>
+      </div>
+
+      {/* Chart */}
+      <StockChart data={history} range={range} ticker={ticker} positive={rangeChange >= 0} />
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Shares', value: holding.shares },
+          { label: 'Avg price paid', value: money(holding.avgPrice) },
+          { label: 'Market value', value: money(marketValue) },
+          {
+            label: 'Your gain/loss',
+            value: `${money(gainLoss)} (${pct(gainLossPercent)})`,
+            color: gainLoss >= 0 ? 'text-green-600' : 'text-red-500',
+          },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-muted rounded-lg p-3">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className={`font-semibold text-sm mt-0.5 ${color ?? ''}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* AI breakdown */}
+      <Suspense fallback={
+        <div className="rounded-lg border bg-muted/40 px-4 py-3 animate-pulse">
+          <div className="h-3 w-24 bg-muted rounded mb-2" />
+          <div className="space-y-1.5">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-3 bg-muted rounded" style={{ width: `${90 - i * 10}%` }} />
+            ))}
+          </div>
+        </div>
+      }>
+        <AiBreakdown ticker={ticker} name={quote.name} changePercent={rangeChange} range={range} />
+      </Suspense>
+    </div>
+  )
+}

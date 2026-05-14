@@ -97,6 +97,16 @@ model RecommendationBatch {
   @@map("recommendation_batches")
 }
 
+model StockHolding {
+  id       Int      @id @default(autoincrement())
+  ticker   String   @unique
+  shares   Float
+  avgPrice Float
+  addedAt  DateTime @default(now())
+
+  @@map("stock_holdings")
+}
+
 model AppSettings {
   key   String @id
   value String
