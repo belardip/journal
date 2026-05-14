@@ -2,17 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
-import Anthropic from '@anthropic-ai/sdk'
+import { callClaudeJson } from '@/lib/ai'
 import { enrichAlbumMetadata } from '@/lib/metadata'
 import { parseJson } from '@/lib/albums'
 
-const anthropicClient = new Anthropic()
+const OPUS = 'claude-opus-4-7'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function parseJsonBlock(raw: string) {
-  return raw.replace(/^```json?\s*|\s*```$/gm, '').trim()
-}
 
 function profileSection(profile: {
   summary?: string | null
@@ -36,15 +32,6 @@ function profileSection(profile: {
     m.length ? `Mood preferences: ${m.join(', ')}` : '',
     x.length ? `Disliked patterns: ${x.join(', ')}` : '',
   ].filter(Boolean).join('\n')
-}
-
-async function claude(prompt: string) {
-  const msg = await anthropicClient.messages.create({
-    model: 'claude-opus-4-7',
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: prompt }],
-  })
-  return (msg.content[0] as { text: string }).text
 }
 
 // ── rate album ────────────────────────────────────────────────────────────────
@@ -84,8 +71,7 @@ export async function updateTasteProfileAction() {
 
   const prompt = `Analyse this listener's album ratings and generate an updated music taste profile for their AI curator.\n\nListening history (most recent first):\n${lines}\n\nReturn ONLY this JSON object, no markdown:\n{\n  "summary": "2-3 paragraph prose in second person describing their taste",\n  "favorite_genres": ["..."],\n  "favorite_artists": ["..."],\n  "preferred_decades": ["..."],\n  "mood_preferences": ["..."],\n  "disliked_patterns": ["..."]\n}`
 
-  const raw = await claude(prompt)
-  const data = JSON.parse(parseJsonBlock(raw))
+  const data = await callClaudeJson<Record<string, unknown>>(prompt, { model: OPUS })
 
   await db.tasteProfile.upsert({
     where: { id: 1 },
@@ -128,8 +114,7 @@ export async function addProfileContextAction(context: string) {
 
   const prompt = `You are updating a music taste profile for an AI curator.\n\nCurrent profile:\nSummary: ${profile.summary}\nGenres: ${g.join(', ') || 'none'}\nArtists: ${a.join(', ') || 'none'}\nEras: ${d.join(', ') || 'none'}\nMoods: ${m.join(', ') || 'none'}\nDislikes: ${x.join(', ') || 'none'}\n\nThe listener has added:\n"${context}"\n\nUpdate the full profile incorporating the new information.\n\nReturn ONLY this JSON (no markdown):\n{\n  "summary": "updated 2-3 paragraph prose in second person",\n  "favorite_genres": ["updated list"],\n  "favorite_artists": ["updated list"],\n  "preferred_decades": ["updated list"],\n  "mood_preferences": ["updated list"],\n  "disliked_patterns": ["updated list"]\n}`
 
-  const raw = await claude(prompt)
-  const data = JSON.parse(parseJsonBlock(raw))
+  const data = await callClaudeJson<Record<string, unknown>>(prompt, { model: OPUS })
 
   await db.tasteProfile.update({
     where: { id: profile.id },
@@ -207,7 +192,7 @@ export async function generateRecommendationsAction(prompt: string) {
   // Pass 1: pick artists
   const p1 = `You are an expert music curator. Based on this listener's taste profile and current request, choose 5 artists whose work they would love.\n\n## Listener's Taste Profile\n${pSection}\n\n${historyArtists ? `## Already listened to (do not suggest these artists again)\n${historyArtists}\n\n` : ''}${recentArtists ? `## Recently recommended (avoid repeating these artists)\n${recentArtists}\n\n` : ''}## Their Request\n"${request}"\n\nRules:\n- 5 different artists, no duplicates\n- Vary the suggestions — don't cluster around one sub-genre\n- The reason should be 2-3 sentences specific to this listener's taste\n\nReturn ONLY a JSON array of 5 objects, no markdown:\n[{"artist": "Artist Name", "reason": "Why this fits..."}]`
 
-  const artistPicks: { artist: string; reason: string }[] = JSON.parse(parseJsonBlock(await claude(p1)))
+  const artistPicks = await callClaudeJson<{ artist: string; reason: string }[]>(p1, { model: OPUS })
 
   const batch = await db.recommendationBatch.create({ data: { prompt: prompt || null } })
 
@@ -232,7 +217,7 @@ export async function generateRecommendationsAction(prompt: string) {
   const tasteSummary = profile?.summary ? `\n\nListener taste summary: ${profile.summary.slice(0, 300)}` : ''
   const p2 = `For each artist below, name the single album that would best suit this listener.\n\nTheir request: "${request}"${tasteSummary}\n\nArtists:\n${artistList}\n\nCRITICAL: Use the exact album title as it appears in music databases. Only name albums you are certain exist.\n\nReturn ONLY a JSON array (one object per artist), no markdown:\n[{"artist": "Artist Name", "title": "Exact Album Title", "year": 2017, "genre": "Genre"}]`
 
-  const suggestions: { artist: string; title: string; year?: number; genre?: string }[] = JSON.parse(parseJsonBlock(await claude(p2)))
+  const suggestions = await callClaudeJson<{ artist: string; title: string; year?: number; genre?: string }[]>(p2, { model: OPUS })
   const reasonMap = new Map(artistPicks.map(a => [a.artist.toLowerCase(), a.reason]))
 
   await db.recommendationLog.create({

@@ -1,8 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { anthropic } from '@/lib/ai'
 import { db } from '@/lib/db'
 import { buildChatSystemPrompt, buildChatMessages } from '@/lib/chat'
-
-const anthropic = new Anthropic()
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

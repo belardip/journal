@@ -1,7 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { callClaude, callClaudeJson } from '@/lib/ai'
 import { db } from '@/lib/db'
-
-const anthropic = new Anthropic()
 
 export async function runProfileUpdate(entryId: number) {
   const recentEntries = await db.journalEntry.findMany({
@@ -46,18 +44,9 @@ export async function runProfileUpdate(entryId: number) {
     '}\n\n' +
     'For advice: 3-5 concrete, specific suggestions based on what the journal reveals — things to try, habits to build, conversations to have, patterns to interrupt. Make them feel personal, not generic. Be specific and grounded in actual evidence from their writing. Return ONLY the JSON object, no other text.'
 
-  const profileMsg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    messages: [{ role: 'user', content: profilePrompt }],
-  })
-
-  const rawProfile = profileMsg.content[0].type === 'text' ? profileMsg.content[0].text : ''
-  const cleanedProfile = rawProfile.replace(/^```json?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim()
-
   let profileData: Record<string, unknown>
   try {
-    profileData = JSON.parse(cleanedProfile)
+    profileData = await callClaudeJson<Record<string, unknown>>(profilePrompt, { maxTokens: 2048 })
   } catch {
     return
   }
@@ -89,17 +78,8 @@ export async function runProfileUpdate(entryId: number) {
     '{"mood": "one word", "mood_score": 1-10, "summary": "2 sentences", "themes": ["theme1", "theme2"]}\n\n' +
     `Entry:\n${triggerEntry.content}`
 
-  const metaMsg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 512,
-    messages: [{ role: 'user', content: metaPrompt }],
-  })
-
-  const rawMeta = metaMsg.content[0].type === 'text' ? metaMsg.content[0].text : ''
-  const cleanedMeta = rawMeta.replace(/^```json?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim()
-
   try {
-    const meta = JSON.parse(cleanedMeta) as { mood?: string; mood_score?: number; summary?: string; themes?: string[] }
+    const meta = await callClaudeJson<{ mood?: string; mood_score?: number; summary?: string; themes?: string[] }>(metaPrompt, { maxTokens: 512 })
     await db.journalEntry.update({
       where: { id: entryId },
       data: {
