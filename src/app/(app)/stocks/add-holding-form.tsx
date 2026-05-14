@@ -44,7 +44,7 @@ export function AddHoldingForm() {
 
   return (
     <form onSubmit={handleSubmit} className="border rounded-lg p-4 space-y-3 bg-card">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <Label htmlFor="ticker" className="text-xs">Ticker</Label>
           <Input
