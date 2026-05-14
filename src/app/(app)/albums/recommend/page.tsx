@@ -15,13 +15,19 @@ const moods = [
 export default function RecommendPage() {
   const [prompt, setPrompt] = useState('')
   const [isPending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
     start(async () => {
-      await generateRecommendationsAction(prompt.trim())
-      router.push('/albums')
+      try {
+        await generateRecommendationsAction(prompt.trim())
+        router.push('/albums')
+      } catch {
+        setError('The AI service is busy right now — try again in a moment.')
+      }
     })
   }
 
@@ -62,6 +68,8 @@ export default function RecommendPage() {
               </button>
             ))}
           </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex gap-3">
             <Button type="submit" className="flex-1">
