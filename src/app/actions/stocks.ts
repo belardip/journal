@@ -46,6 +46,36 @@ export async function removeHoldingAction(ticker: string): Promise<void> {
   revalidatePath('/stocks')
 }
 
+export async function getTickerBreakdownAction({
+  ticker, name, changePercent, range,
+}: {
+  ticker: string
+  name: string
+  changePercent: number
+  range: string
+}): Promise<string> {
+  const rangeLabel: Record<string, string> = {
+    '1mo': '1 month', '3mo': '3 months', '6mo': '6 months', '1y': '1 year', '5y': '5 years',
+  }
+  const msg = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 700,
+    tools: [{ type: 'web_search_20250305' as 'web_search_20250305', name: 'web_search' }],
+    messages: [{
+      role: 'user',
+      content: `The stock ${ticker} (${name}) is ${changePercent >= 0 ? 'up' : 'down'} ${Math.abs(changePercent).toFixed(1)}% over the last ${rangeLabel[range] ?? range}.
+
+Search for recent news and write me a plain-English breakdown (4-6 sentences):
+1. What's been driving the price movement recently
+2. What this company actually does (one sentence, simple)
+3. One key number that matters right now and what it means in plain English — avoid jargon, or explain any term you use in plain language
+
+Be direct and specific. Don't be vague or cheerful.`,
+    }],
+  })
+  return msg.content.find(b => b.type === 'text')?.text ?? ''
+}
+
 export async function getPortfolioNewsAction(
   holdings: { ticker: string; name: string; price: number }[]
 ): Promise<string> {
