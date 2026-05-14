@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
+import { getSessionToken } from '@/lib/session'
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token')
@@ -10,11 +11,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${base}/login?error=expired`)
   }
 
+  const sessionToken = await getSessionToken()
   const jar = await cookies()
-  jar.set('www_auth', 'authenticated', {
+  jar.set('www_auth', sessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
 

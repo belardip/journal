@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { BookOpen, Disc3, Plus, Clock, User2, Sparkles } from 'lucide-react'
+import { BookOpen, Disc3, Plus, Clock, User2, Sparkles, LogOut } from 'lucide-react'
+import { logoutAllAction } from '@/app/actions/auth'
 
 type NavItem = {
   label: string
@@ -96,6 +97,17 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           )
         })}
       </nav>
+      <div className="px-3 py-4 border-t">
+        <form action={logoutAllAction}>
+          <button
+            type="submit"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full"
+          >
+            <LogOut className="h-3 w-3" />
+            Sign out all devices
+          </button>
+        </form>
+      </div>
     </>
   )
 }

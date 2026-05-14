@@ -1,8 +1,18 @@
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { getSessionToken } from '@/lib/session'
 import { Sidebar } from '@/components/sidebar'
 import { SectionNav } from '@/components/section-nav'
 import { MobileHeader } from '@/components/mobile-header'
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  if (process.env.NODE_ENV !== 'development') {
+    const jar = await cookies()
+    const cookieValue = jar.get('www_auth')?.value
+    const currentToken = await getSessionToken()
+    if (cookieValue !== currentToken) redirect('/login')
+  }
+
   return (
     <div className="min-h-full flex flex-col md:flex-row">
       <MobileHeader />
