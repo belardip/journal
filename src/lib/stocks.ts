@@ -17,12 +17,22 @@ export type HistoricalPoint = {
 
 export type RangeKey = '1mo' | '3mo' | '6mo' | '1y' | '5y'
 
-const RANGE_MAP: Record<RangeKey, { range: string; interval: string }> = {
-  '1mo': { range: '1mo', interval: '1d' },
-  '3mo': { range: '3mo', interval: '1d' },
-  '6mo': { range: '6mo', interval: '1wk' },
-  '1y':  { range: '1y',  interval: '1wk' },
-  '5y':  { range: '5y',  interval: '1mo' },
+const RANGE_TO_INTERVAL: Record<RangeKey, string> = {
+  '1mo': '1d',
+  '3mo': '1d',
+  '6mo': '1wk',
+  '1y':  '1wk',
+  '5y':  '1mo',
+}
+
+function rangeToPeriod1(range: RangeKey): Date {
+  const d = new Date()
+  if (range === '1mo') d.setMonth(d.getMonth() - 1)
+  else if (range === '3mo') d.setMonth(d.getMonth() - 3)
+  else if (range === '6mo') d.setMonth(d.getMonth() - 6)
+  else if (range === '1y') d.setFullYear(d.getFullYear() - 1)
+  else if (range === '5y') d.setFullYear(d.getFullYear() - 5)
+  return d
 }
 
 export async function getQuote(ticker: string): Promise<QuoteResult> {
@@ -42,15 +52,20 @@ export async function getQuotes(tickers: string[]): Promise<QuoteResult[]> {
 }
 
 export async function getHistory(ticker: string, range: RangeKey): Promise<HistoricalPoint[]> {
-  const { range: r, interval } = RANGE_MAP[range]
-  const result = await yahooFinance.chart(ticker, { range: r, interval } as Parameters<typeof yahooFinance.chart>[1])
-  const quotes = result.quotes ?? []
-  return quotes
-    .filter(q => q.close != null)
-    .map(q => ({
-      date: new Date(q.date).toLocaleDateString('en-CA'),
-      close: Math.round(q.close! * 100) / 100,
-    }))
+  try {
+    const period1 = rangeToPeriod1(range)
+    const interval = RANGE_TO_INTERVAL[range]
+    const result = await yahooFinance.chart(ticker, { period1, interval } as Parameters<typeof yahooFinance.chart>[1])
+    const quotes = result.quotes ?? []
+    return quotes
+      .filter(q => q.close != null)
+      .map(q => ({
+        date: new Date(q.date).toLocaleDateString('en-CA'),
+        close: Math.round(q.close! * 100) / 100,
+      }))
+  } catch {
+    return []
+  }
 }
 
 export async function validateTicker(ticker: string): Promise<string | null> {
@@ -64,7 +79,9 @@ export async function validateTicker(ticker: string): Promise<string | null> {
 
 export async function getWeeklyChangePct(ticker: string): Promise<number> {
   try {
-    const result = await yahooFinance.chart(ticker, { range: '5d', interval: '1d' } as Parameters<typeof yahooFinance.chart>[1])
+    const period1 = new Date()
+    period1.setDate(period1.getDate() - 8)
+    const result = await yahooFinance.chart(ticker, { period1, interval: '1d' } as Parameters<typeof yahooFinance.chart>[1])
     const quotes = (result.quotes ?? []).filter(q => q.close != null)
     if (quotes.length < 2) return 0
     const first = quotes[0].close!
