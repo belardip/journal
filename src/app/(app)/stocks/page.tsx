@@ -1,37 +1,8 @@
-import { Suspense } from 'react'
 import { db } from '@/lib/db'
 import { getQuotes } from '@/lib/stocks'
-import { anthropic } from '@/lib/ai'
 import { HoldingsList, type HoldingRow } from './holdings-chart'
 import { AddHoldingForm } from './add-holding-form'
-
-async function AiSummary({ holdings }: { holdings: HoldingRow[] }) {
-  if (holdings.length === 0) return null
-
-  const sorted = [...holdings].sort((a, b) => b.changePercent - a.changePercent)
-  const lines = sorted.map(h =>
-    `${h.ticker} (${h.name}): $${h.price.toFixed(2)}, ${h.changePercent >= 0 ? '+' : ''}${h.changePercent.toFixed(2)}% today, ${h.gainLossPercent >= 0 ? '+' : ''}${h.gainLossPercent.toFixed(2)}% total gain`
-  ).join('\n')
-
-  const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 600,
-    tools: [{ type: 'web_search_20250305' as 'web_search_20250305', name: 'web_search' }],
-    messages: [{
-      role: 'user',
-      content: `I own these stocks:\n${lines}\n\nSearch the web for recent news on the biggest movers and write me a short plain-English summary (3-5 sentences). No jargon — if you use a financial term, explain it in one phrase. Tell me what's actually driving the moves. Be direct, not cheerful.`,
-    }],
-  })
-
-  const text = msg.content.find(b => b.type === 'text')?.text ?? ''
-
-  return (
-    <div className="rounded-lg border bg-muted/40 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">What&apos;s going on</p>
-      <p className="text-sm leading-relaxed">{text}</p>
-    </div>
-  )
-}
+import { AiNewsButton } from './ai-news-button'
 
 export default async function StocksPage() {
   const holdings = await db.stockHolding.findMany({ orderBy: { addedAt: 'asc' } })
@@ -74,18 +45,7 @@ export default async function StocksPage() {
         </p>
       ) : (
         <>
-          <Suspense fallback={
-            <div className="rounded-lg border bg-muted/40 px-4 py-3 animate-pulse">
-              <div className="h-3 w-24 bg-muted rounded mb-2" />
-              <div className="space-y-1.5">
-                <div className="h-3 bg-muted rounded w-full" />
-                <div className="h-3 bg-muted rounded w-4/5" />
-                <div className="h-3 bg-muted rounded w-3/5" />
-              </div>
-            </div>
-          }>
-            <AiSummary holdings={rows} />
-          </Suspense>
+          <AiNewsButton holdings={rows} />
           <HoldingsList holdings={rows} />
         </>
       )}

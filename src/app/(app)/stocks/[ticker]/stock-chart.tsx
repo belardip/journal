@@ -35,6 +35,31 @@ export function StockChart({ data, range, ticker, positive }: Props) {
 
   const color = positive ? '#16a34a' : '#ef4444'
 
+  if (data.length < 2) {
+    return (
+      <div>
+        <div className="flex gap-1 mb-3">
+          {RANGES.map(r => (
+            <button
+              key={r.key}
+              onClick={() => setRange(r.key)}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                range === r.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <div className="h-55 flex items-center justify-center text-sm text-muted-foreground bg-muted/20 rounded-lg">
+          No chart data available
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="flex gap-1 mb-3">

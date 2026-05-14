@@ -1,11 +1,19 @@
 import { Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { db } from '@/lib/db'
 import { getQuote, getHistory, type RangeKey } from '@/lib/stocks'
 import { anthropic } from '@/lib/ai'
-import { StockChart } from './stock-chart'
+
+const StockChart = dynamic(
+  () => import('./stock-chart').then(m => m.StockChart),
+  {
+    ssr: false,
+    loading: () => <div className="h-66 bg-muted/20 rounded-lg animate-pulse" />,
+  }
+)
 
 const VALID_RANGES: RangeKey[] = ['1mo', '3mo', '6mo', '1y', '5y']
 

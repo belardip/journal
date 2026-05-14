@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
-import { validateTicker } from '@/lib/stocks'
+import { validateTicker, getWeeklyChangePct } from '@/lib/stocks'
+import { anthropic } from '@/lib/ai'
 
 export async function addHoldingAction(data: {
   ticker: string
@@ -43,4 +44,34 @@ export async function updateHoldingAction(data: {
 export async function removeHoldingAction(ticker: string): Promise<void> {
   await db.stockHolding.delete({ where: { ticker } })
   revalidatePath('/stocks')
+}
+
+export async function getPortfolioNewsAction(
+  holdings: { ticker: string; name: string; price: number }[]
+): Promise<string> {
+  const weeklyChanges = await Promise.all(holdings.map(h => getWeeklyChangePct(h.ticker)))
+
+  const movers = holdings
+    .map((h, i) => ({ ...h, weeklyChange: weeklyChanges[i] }))
+    .filter(h => Math.abs(h.weeklyChange) >= 3)
+
+  if (movers.length === 0) {
+    return "Nothing in your portfolio moved more than 3% this week."
+  }
+
+  const lines = movers.map(h =>
+    `${h.ticker} (${h.name}): $${h.price.toFixed(2)}, ${h.weeklyChange >= 0 ? '+' : ''}${h.weeklyChange.toFixed(1)}% this week`
+  ).join('\n')
+
+  const msg = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 600,
+    tools: [{ type: 'web_search_20250305' as 'web_search_20250305', name: 'web_search' }],
+    messages: [{
+      role: 'user',
+      content: `These stocks in my portfolio moved significantly this week:\n${lines}\n\nSearch for recent news and write a short plain-English summary (3-5 sentences) on what drove the moves. Be direct and specific. No jargon without explanation.`,
+    }],
+  })
+
+  return msg.content.find(b => b.type === 'text')?.text ?? ''
 }

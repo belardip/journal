@@ -61,3 +61,16 @@ export async function validateTicker(ticker: string): Promise<string | null> {
     return null
   }
 }
+
+export async function getWeeklyChangePct(ticker: string): Promise<number> {
+  try {
+    const result = await yahooFinance.chart(ticker, { range: '5d', interval: '1d' } as Parameters<typeof yahooFinance.chart>[1])
+    const quotes = (result.quotes ?? []).filter(q => q.close != null)
+    if (quotes.length < 2) return 0
+    const first = quotes[0].close!
+    const last = quotes[quotes.length - 1].close!
+    return ((last - first) / first) * 100
+  } catch {
+    return 0
+  }
+}
