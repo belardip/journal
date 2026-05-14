@@ -20,7 +20,6 @@ const sections = [
       { href: '/albums/recommend', label: 'New picks' },
       { href: '/albums/history', label: 'History' },
       { href: '/albums/profile', label: 'Profile' },
-      { href: '/albums/logs', label: 'Logs' },
     ],
   },
 ]

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { BookOpen, Disc3, Plus, Clock, User2, ScrollText, Sparkles } from 'lucide-react'
+import { BookOpen, Disc3, Plus, Clock, User2, Sparkles } from 'lucide-react'
 
 type NavItem = {
   label: string
@@ -34,7 +34,6 @@ const apps: NavItem[] = [
     subLinks: [
       { href: '/albums/history', label: 'History', icon: Clock },
       { href: '/albums/profile', label: 'Profile', icon: User2 },
-      { href: '/albums/logs', label: 'Logs', icon: ScrollText },
     ],
   },
 ]
