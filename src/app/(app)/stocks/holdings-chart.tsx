@@ -5,6 +5,7 @@ import { Trash2, Pencil, Check, X } from 'lucide-react'
 import Link from 'next/link'
 import { removeHoldingAction, updateHoldingAction } from '@/app/actions/stocks'
 import { Input } from '@/components/ui/input'
+import { AiBreakdownButton } from './[ticker]/ai-breakdown-button'
 
 export type HoldingRow = {
   ticker: string
@@ -155,6 +156,8 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
                             </div>
                           ))}
                         </div>
+                        <AiBreakdownButton ticker={h.ticker} name={h.name} changePercent={h.m1} range="1mo" />
+
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <Link href={`/stocks/${h.ticker}`} className="hover:text-foreground transition-colors">
                             View chart →
