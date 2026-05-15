@@ -1,5 +1,6 @@
 'use server'
 
+import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { runProfileUpdate } from '@/lib/updateProfile'
@@ -18,7 +19,9 @@ export async function finalizeEntryAction(id: number) {
     data: { sessionComplete: true },
   })
 
-  runProfileUpdate(id).catch(console.error)
+  after(async () => {
+    await runProfileUpdate(id).catch(console.error)
+  })
 
   revalidatePath('/journal')
   revalidatePath(`/journal/${id}`)
