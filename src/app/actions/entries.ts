@@ -19,6 +19,12 @@ export async function finalizeEntryAction(id: number) {
     data: { sessionComplete: true },
   })
 
+  await db.appSettings.upsert({
+    where: { key: 'profile_updating_since' },
+    update: { value: new Date().toISOString() },
+    create: { key: 'profile_updating_since', value: new Date().toISOString() },
+  })
+
   after(async () => {
     await runProfileUpdate(id).catch(console.error)
   })

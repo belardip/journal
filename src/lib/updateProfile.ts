@@ -129,5 +129,7 @@ Be specific and direct. No generic advice. No hedging. No cheerfulness.`
       console.log(`[profile] observations done`)
     }
   } catch (e) { console.error('[profile] observations failed:', e) }
+
+  await db.appSettings.deleteMany({ where: { key: 'profile_updating_since' } })
   console.log(`[profile] update complete for entry ${entryId}`)
 }

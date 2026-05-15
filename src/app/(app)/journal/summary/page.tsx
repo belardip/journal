@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { UpdatePoller } from './update-poller'
 
 function parseList(json: string): string[] {
   try { return JSON.parse(json) as string[] } catch { return [] }
@@ -53,7 +54,14 @@ async function EntryObservations() {
 }
 
 export default async function JournalSummaryPage() {
-  const profile = await db.userProfile.findFirst()
+  const [profile, updatingSince] = await Promise.all([
+    db.userProfile.findFirst(),
+    db.appSettings.findUnique({ where: { key: 'profile_updating_since' } }),
+  ])
+
+  const isUpdating = updatingSince
+    ? (Date.now() - new Date(updatingSince.value).getTime()) < 10 * 60 * 1000
+    : false
 
   if (!profile?.summary) {
     return (
@@ -72,6 +80,7 @@ export default async function JournalSummaryPage() {
 
   return (
     <div>
+      {isUpdating && <UpdatePoller />}
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold">Summary</h1>
@@ -81,6 +90,16 @@ export default async function JournalSummaryPage() {
           </p>
         </div>
       </div>
+
+      {isUpdating && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 px-3 py-2.5 rounded-lg bg-muted">
+          <svg className="h-3.5 w-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Analyzing your latest entry — this takes a few minutes. Page will update automatically.
+        </div>
+      )}
 
       <EntryObservations />
 
