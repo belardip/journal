@@ -77,6 +77,29 @@ export async function validateTicker(ticker: string): Promise<string | null> {
   }
 }
 
+export type PerformanceData = { w1: number; m1: number; m6: number; y1: number }
+
+export async function getStockPerformance(ticker: string): Promise<PerformanceData> {
+  try {
+    const period1 = new Date()
+    period1.setFullYear(period1.getFullYear() - 1)
+    const result = await yahooFinance.chart(ticker, { period1, interval: '1d' } as Parameters<typeof yahooFinance.chart>[1])
+    const closes = (result.quotes ?? []).filter(q => q.close != null).map(q => q.close!)
+    if (closes.length < 5) return { w1: 0, m1: 0, m6: 0, y1: 0 }
+    const last = closes[closes.length - 1]
+    const pct = (from: number) => from > 0 ? ((last - from) / from) * 100 : 0
+    const at = (n: number) => closes[Math.max(0, closes.length - 1 - n)]
+    return {
+      w1: pct(at(5)),
+      m1: pct(at(22)),
+      m6: pct(at(130)),
+      y1: pct(closes[0]),
+    }
+  } catch {
+    return { w1: 0, m1: 0, m6: 0, y1: 0 }
+  }
+}
+
 export async function getWeeklyChangePct(ticker: string): Promise<number> {
   try {
     const period1 = new Date()

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { getQuotes } from '@/lib/stocks'
+import { getQuotes, getStockPerformance } from '@/lib/stocks'
 import { HoldingsList, type HoldingRow } from './holdings-chart'
 import { AddHoldingForm } from './add-holding-form'
 import { AiNewsButton } from './ai-news-button'
@@ -9,9 +9,13 @@ export default async function StocksPage() {
 
   let rows: HoldingRow[] = []
   if (holdings.length > 0) {
-    const quotes = await getQuotes(holdings.map(h => h.ticker))
-    rows = holdings.map(h => {
+    const [quotes, performances] = await Promise.all([
+      getQuotes(holdings.map(h => h.ticker)),
+      Promise.all(holdings.map(h => getStockPerformance(h.ticker))),
+    ])
+    rows = holdings.map((h, i) => {
       const q = quotes.find(q => q.ticker === h.ticker)!
+      const perf = performances[i]
       const marketValue = (q?.price ?? 0) * h.shares
       const costBasis = h.avgPrice * h.shares
       const gainLoss = marketValue - costBasis
@@ -28,6 +32,10 @@ export default async function StocksPage() {
         marketValue,
         gainLoss,
         gainLossPercent,
+        w1: perf.w1,
+        m1: perf.m1,
+        m6: perf.m6,
+        y1: perf.y1,
       }
     })
   }
