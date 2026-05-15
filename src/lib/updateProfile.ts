@@ -90,4 +90,38 @@ export async function runProfileUpdate(entryId: number) {
       },
     })
   } catch { /* ignore */ }
+
+  try {
+    const [updatedEntry, updatedProfile] = await Promise.all([
+      db.journalEntry.findUnique({ where: { id: entryId } }),
+      db.userProfile.findFirst(),
+    ])
+    if (updatedEntry && updatedProfile?.summary) {
+      const patterns = (() => { try { return JSON.parse(updatedProfile.behavioralPatterns) as string[] } catch { return [] as string[] } })()
+      const moodTrends = (() => { try { return JSON.parse(updatedProfile.moodTrends) as string[] } catch { return [] as string[] } })()
+      const themes = (() => { try { return JSON.parse(updatedEntry.themes) as string[] } catch { return [] as string[] } })()
+
+      const obsPrompt = `You are reading someone's most recent journal entry alongside their established profile.
+
+THEIR PROFILE SUMMARY:
+${updatedProfile.summary}
+${patterns.length ? `Behavioral patterns: ${patterns.join('; ')}` : ''}
+${moodTrends.length ? `Mood trends: ${moodTrends.join('; ')}` : ''}
+
+MOST RECENT ENTRY (${updatedEntry.date}${updatedEntry.timeOfDay ? `, ${updatedEntry.timeOfDay}` : ''}):
+${updatedEntry.content}
+${updatedEntry.mood ? `Mood: ${updatedEntry.mood}${updatedEntry.moodScore ? ` (${updatedEntry.moodScore}/10)` : ''}` : ''}
+${themes.length ? `Themes: ${themes.join(', ')}` : ''}
+
+Write 3–4 sharp observations about this specific entry. Reference what they actually wrote. Focus on:
+- What's consistent or inconsistent with their usual patterns
+- Any shift in tone, mood, or preoccupations vs their baseline
+- What this entry reveals that the broader summary might not capture yet
+
+Be specific and direct. No generic advice. No hedging. No cheerfulness.`
+
+      const observations = await callClaude(obsPrompt, { maxTokens: 500 })
+      await db.journalEntry.update({ where: { id: entryId }, data: { observations } })
+    }
+  } catch { /* ignore */ }
 }

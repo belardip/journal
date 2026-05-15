@@ -11,6 +11,7 @@ const sections = [
       { href: '/journal', label: 'Entries', exact: true },
       { href: '/journal/new', label: 'New entry' },
       { href: '/journal/summary', label: 'Summary' },
+      { href: '/journal/trends', label: 'Trends' },
     ],
   },
   {

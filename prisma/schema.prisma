@@ -17,6 +17,7 @@ model JournalEntry {
   moodScore       Int?
   summary         String?
   themes          String        @default("[]")
+  observations    String?
   sessionComplete Boolean       @default(false)
   createdAt       DateTime      @default(now())
   messages        ChatMessage[]
