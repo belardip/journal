@@ -44,12 +44,15 @@ export async function runProfileUpdate(entryId: number) {
     '}\n\n' +
     'For advice: 3-5 concrete, specific suggestions based on what the journal reveals — things to try, habits to build, conversations to have, patterns to interrupt. Make them feel personal, not generic. Be specific and grounded in actual evidence from their writing. Return ONLY the JSON object, no other text.'
 
+  console.log(`[profile] starting update for entry ${entryId}`)
   let profileData: Record<string, unknown>
   try {
     profileData = await callClaudeJson<Record<string, unknown>>(profilePrompt, { maxTokens: 2048 })
-  } catch {
+  } catch (e) {
+    console.error('[profile] profile synthesis failed:', e)
     return
   }
+  console.log(`[profile] synthesis done`)
 
   const profileAttributes = {
     summary: (profileData.summary as string) ?? '',
@@ -89,7 +92,8 @@ export async function runProfileUpdate(entryId: number) {
         themes: JSON.stringify(meta.themes ?? []),
       },
     })
-  } catch { /* ignore */ }
+    console.log(`[profile] entry meta done (mood: ${meta.mood}, score: ${meta.mood_score})`)
+  } catch (e) { console.error('[profile] entry meta failed:', e) }
 
   try {
     const [updatedEntry, updatedProfile] = await Promise.all([
@@ -122,6 +126,8 @@ Be specific and direct. No generic advice. No hedging. No cheerfulness.`
 
       const observations = await callClaude(obsPrompt, { maxTokens: 500 })
       await db.journalEntry.update({ where: { id: entryId }, data: { observations } })
+      console.log(`[profile] observations done`)
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.error('[profile] observations failed:', e) }
+  console.log(`[profile] update complete for entry ${entryId}`)
 }

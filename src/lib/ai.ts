@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-export const anthropic = new Anthropic()
+export const anthropic = new Anthropic({ maxRetries: 6 })
 
 export function stripJsonFences(text: string): string {
   return text.replace(/^```json?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim()
