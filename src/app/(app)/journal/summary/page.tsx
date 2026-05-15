@@ -1,9 +1,11 @@
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { callClaude } from '@/lib/ai'
 
 function parseList(json: string): string[] {
   try { return JSON.parse(json) as string[] } catch { return [] }
@@ -28,6 +30,54 @@ const sections = [
   { key: 'behavioralPatterns', label: 'Patterns', icon: '🧠' },
   { key: 'advice', label: 'Things to Try', icon: '💡' },
 ] as const
+
+async function EntryObservations({ profile }: { profile: Awaited<ReturnType<typeof db.userProfile.findFirst>> }) {
+  const entry = await db.journalEntry.findFirst({
+    where: { sessionComplete: true },
+    orderBy: { createdAt: 'desc' },
+  })
+  if (!entry) return null
+
+  const themes = (() => { try { return JSON.parse(entry.themes) as string[] } catch { return [] } })()
+  const patterns = (() => { try { return JSON.parse(profile?.behavioralPatterns ?? '[]') as string[] } catch { return [] } })()
+  const moodTrends = (() => { try { return JSON.parse(profile?.moodTrends ?? '[]') as string[] } catch { return [] } })()
+
+  const prompt = `You are reading someone's most recent journal entry alongside their established profile.
+
+THEIR PROFILE SUMMARY:
+${profile?.summary ?? 'No profile yet.'}
+${patterns.length ? `Behavioral patterns: ${patterns.join('; ')}` : ''}
+${moodTrends.length ? `Mood trends: ${moodTrends.join('; ')}` : ''}
+
+MOST RECENT ENTRY (${entry.date}${entry.timeOfDay ? `, ${entry.timeOfDay}` : ''}):
+${entry.content}
+${entry.mood ? `Mood: ${entry.mood}${entry.moodScore ? ` (${entry.moodScore}/10)` : ''}` : ''}
+${themes.length ? `Themes: ${themes.join(', ')}` : ''}
+
+Write 3–4 sharp observations about this specific entry. Reference what they actually wrote. Focus on:
+- What's consistent or inconsistent with their usual patterns
+- Any shift in tone, mood, or preoccupations vs their baseline
+- What this entry reveals that the broader summary might not capture yet
+
+Be specific and direct. No generic advice. No hedging. No cheerfulness.`
+
+  const text = await callClaude(prompt, { maxTokens: 500 })
+
+  const dateLabel = new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+  return (
+    <Card className="mb-4 border-primary/20 bg-primary/5">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          🔍 Latest Entry · {dateLabel}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default async function JournalSummaryPage() {
   const profile = await db.userProfile.findFirst()
@@ -58,6 +108,21 @@ export default async function JournalSummaryPage() {
           </p>
         </div>
       </div>
+
+      <Suspense fallback={
+        <Card className="mb-4 border-primary/20 bg-primary/5 animate-pulse">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">🔍 Latest Entry</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {[80, 95, 70, 85].map(w => (
+              <div key={w} className="h-3 bg-muted rounded" style={{ width: `${w}%` }} />
+            ))}
+          </CardContent>
+        </Card>
+      }>
+        <EntryObservations profile={profile} />
+      </Suspense>
 
       <Card className="mb-4">
         <CardHeader className="pb-2">
