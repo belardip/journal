@@ -118,12 +118,7 @@ ${updatedEntry.content}
 ${updatedEntry.mood ? `Mood: ${updatedEntry.mood}${updatedEntry.moodScore ? ` (${updatedEntry.moodScore}/10)` : ''}` : ''}
 ${themes.length ? `Themes: ${themes.join(', ')}` : ''}
 
-Write 3–4 sharp observations about this specific entry. Reference what they actually wrote. Focus on:
-- What's consistent or inconsistent with their usual patterns
-- Any shift in tone, mood, or preoccupations vs their baseline
-- What this entry reveals that the broader summary might not capture yet
-
-Be specific and direct. No generic advice. No hedging. No cheerfulness.`
+Write 2–3 observations about this entry. Each one should be 1–2 sentences max. Reference what they actually wrote. No intros, no headers, no bullet points — just the observations as plain short paragraphs separated by line breaks. Be specific and direct.`
 
       const observations = await callClaude(obsPrompt, { maxTokens: 500 })
       await db.journalEntry.update({ where: { id: entryId }, data: { observations } })
