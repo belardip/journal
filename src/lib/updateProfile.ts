@@ -47,9 +47,10 @@ export async function runProfileUpdate(entryId: number) {
   console.log(`[profile] starting update for entry ${entryId}`)
   let profileData: Record<string, unknown>
   try {
-    profileData = await callClaudeJson<Record<string, unknown>>(profilePrompt, { maxTokens: 2048 })
+    profileData = await callClaudeJson<Record<string, unknown>>(profilePrompt, { maxTokens: 4096 })
   } catch (e) {
     console.error('[profile] profile synthesis failed:', e)
+    await db.appSettings.deleteMany({ where: { key: 'profile_updating_since' } })
     return
   }
   console.log(`[profile] synthesis done`)
