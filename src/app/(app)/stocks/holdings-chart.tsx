@@ -122,7 +122,7 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
       </div>
 
       <div className="flex gap-4 items-start">
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 relative">
           <table className="w-full">
             <thead>
               <tr className="text-xs text-muted-foreground border-b">
@@ -225,36 +225,35 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
               ))}
             </tbody>
           </table>
+          {aiTicker && (
+            <div className="hidden md:block absolute left-full top-0 ml-4 w-72 z-10">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <span>{aiTicker}</span>
+                    <button
+                      onClick={() => { setAiTicker(null); setAiResult(null) }}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {aiPending || !aiResult ? (
+                    <div className="space-y-2 animate-pulse">
+                      {[85, 100, 75, 90, 65, 80].map(w => (
+                        <div key={w} className="h-2.5 bg-muted rounded" style={{ width: `${w}%` }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{aiResult}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
-
-        {aiTicker && (
-          <div className="hidden md:block w-72 shrink-0">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <span>{aiTicker}</span>
-                  <button
-                    onClick={() => { setAiTicker(null); setAiResult(null) }}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {aiPending || !aiResult ? (
-                  <div className="space-y-2 animate-pulse">
-                    {[85, 100, 75, 90, 65, 80].map(w => (
-                      <div key={w} className="h-2.5 bg-muted rounded" style={{ width: `${w}%` }} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{aiResult}</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   )
