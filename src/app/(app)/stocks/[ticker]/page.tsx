@@ -1,3 +1,8 @@
+export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }) {
+  const { ticker } = await params
+  return { title: ticker.toUpperCase() }
+}
+
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'

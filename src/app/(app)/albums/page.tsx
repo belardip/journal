@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Albums' }
 
 import { db } from '@/lib/db'
 import Link from 'next/link'

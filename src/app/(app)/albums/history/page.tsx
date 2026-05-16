@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'History' }
 
 import { db } from '@/lib/db'
 import { AlbumCard } from '@/components/albums/AlbumCard'

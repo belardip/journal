@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Taste Profile' }
 
 import { db } from '@/lib/db'
 import { parseJson } from '@/lib/albums'

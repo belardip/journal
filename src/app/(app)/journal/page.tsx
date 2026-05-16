@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Journal' }
 
 import { db } from '@/lib/db'
 import { Badge } from '@/components/ui/badge'

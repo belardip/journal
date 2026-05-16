@@ -3,6 +3,12 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import { formatEntryDate } from '@/lib/chat'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const entry = await db.journalEntry.findUnique({ where: { id: parseInt(id) }, select: { date: true } })
+  return { title: entry ? formatEntryDate(entry.date) : 'Entry' }
+}
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'

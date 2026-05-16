@@ -1,3 +1,5 @@
+export const metadata = { title: 'Portfolio' }
+
 import { db } from '@/lib/db'
 import { getQuotes, getStockPerformance } from '@/lib/stocks'
 import { HoldingsList, type HoldingRow } from './holdings-chart'

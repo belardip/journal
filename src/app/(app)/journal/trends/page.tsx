@@ -1,3 +1,5 @@
+export const metadata = { title: 'Trends' }
+
 import { db } from '@/lib/db'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MoodHeatmap } from './mood-heatmap'
