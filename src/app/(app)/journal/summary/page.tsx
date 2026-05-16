@@ -1,11 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Summary' }
 
+import { after } from 'next/server'
 import { db } from '@/lib/db'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UpdatePoller } from './update-poller'
+import { runProfileUpdate } from '@/lib/updateProfile'
 
 function parseList(json: string): string[] {
   try { return JSON.parse(json) as string[] } catch { return [] }
@@ -55,14 +57,31 @@ async function EntryObservations() {
 }
 
 export default async function JournalSummaryPage() {
-  const [profile, updatingSince] = await Promise.all([
+  const [profile, updatingSince, latestEntry] = await Promise.all([
     db.userProfile.findFirst(),
     db.appSettings.findUnique({ where: { key: 'profile_updating_since' } }),
+    db.journalEntry.findFirst({ where: { sessionComplete: true }, orderBy: { createdAt: 'desc' } }),
   ])
 
-  const isUpdating = updatingSince
+  const showUpdating = updatingSince
     ? (Date.now() - new Date(updatingSince.value).getTime()) < 10 * 60 * 1000
     : false
+
+  const isStale = latestEntry && (
+    !profile?.lastUpdatedAt ||
+    new Date(latestEntry.createdAt) > new Date(profile.lastUpdatedAt)
+  )
+
+  let showUpdating = showUpdating
+  if (isStale && !showUpdating && latestEntry) {
+    await db.appSettings.upsert({
+      where: { key: 'profile_updating_since' },
+      update: { value: new Date().toISOString() },
+      create: { key: 'profile_updating_since', value: new Date().toISOString() },
+    })
+    after(async () => { await runProfileUpdate(latestEntry.id).catch(console.error) })
+    showUpdating = true
+  }
 
   if (!profile?.summary) {
     return (
@@ -81,7 +100,7 @@ export default async function JournalSummaryPage() {
 
   return (
     <div>
-      {isUpdating && <UpdatePoller />}
+      {showUpdating && <UpdatePoller />}
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold">Summary</h1>
@@ -92,7 +111,7 @@ export default async function JournalSummaryPage() {
         </div>
       </div>
 
-      {isUpdating && (
+      {showUpdating && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 px-3 py-2.5 rounded-lg bg-muted">
           <svg className="h-3.5 w-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
