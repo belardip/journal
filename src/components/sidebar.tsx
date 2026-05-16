@@ -11,7 +11,7 @@ type NavItem = {
   icon: React.ElementType
   href: string
   match: (p: string) => boolean
-  action: { href: string; label: string }
+  action?: { href: string; label: string }
   subLinks?: { href: string; label: string; icon: React.ElementType }[]
 }
 
@@ -32,7 +32,6 @@ const apps: NavItem[] = [
     icon: TrendingUp,
     href: '/stocks',
     match: (p: string) => p.startsWith('/stocks'),
-    action: { href: '/stocks', label: 'Portfolio' },
   },
   {
     label: 'Albums',
@@ -75,14 +74,16 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               </Link>
               {active && (
                 <div className="mt-0.5 ml-2 space-y-0.5">
-                  <Link
-                    href={action.href}
-                    onClick={onNavigate}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  >
-                    <Plus className="h-3 w-3" />
-                    {action.label}
-                  </Link>
+                  {action && (
+                    <Link
+                      href={action.href}
+                      onClick={onNavigate}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Plus className="h-3 w-3" />
+                      {action.label}
+                    </Link>
+                  )}
                   {subLinks?.map(sub => (
                     <Link
                       key={sub.href}
