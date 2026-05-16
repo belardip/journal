@@ -63,7 +63,7 @@ export default async function JournalSummaryPage() {
     db.journalEntry.findFirst({ where: { sessionComplete: true }, orderBy: { createdAt: 'desc' } }),
   ])
 
-  const showUpdating = updatingSince
+  const isUpdating = updatingSince
     ? (Date.now() - new Date(updatingSince.value).getTime()) < 10 * 60 * 1000
     : false
 
@@ -72,8 +72,8 @@ export default async function JournalSummaryPage() {
     new Date(latestEntry.createdAt) > new Date(profile.lastUpdatedAt)
   )
 
-  let showUpdating = showUpdating
-  if (isStale && !showUpdating && latestEntry) {
+  let showUpdating = isUpdating
+  if (isStale && !isUpdating && latestEntry) {
     await db.appSettings.upsert({
       where: { key: 'profile_updating_since' },
       update: { value: new Date().toISOString() },
