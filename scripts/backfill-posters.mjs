@@ -1,9 +1,8 @@
 import { PrismaClient } from '../src/generated/prisma/client/index.js'
-import { PrismaLibSQL } from '@prisma/adapter-libsql'
-import { createClient } from '@libsql/client'
+import { PrismaLibSql } from '@prisma/adapter-libsql'
 
-const libsql = createClient({ url: `file:${process.env.DATABASE_URL?.replace('file:', '') ?? 'prod.db'}` })
-const adapter = new PrismaLibSQL(libsql)
+
+const adapter = new PrismaLibSql({ url: process.env.DATABASE_URL ?? 'file:prod.db' })
 const db = new PrismaClient({ adapter })
 
 const OMDB_API_KEY = process.env.OMDB_API_KEY
