@@ -2,16 +2,18 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { generateOnboardingMoviesAction, completeMovieOnboardingAction } from '@/app/actions/movies'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Film, Loader2, Plus } from 'lucide-react'
+import { Film, Loader2 } from 'lucide-react'
 
 type OnboardMovie = {
   title: string
   director: string
   year: number | null
   genre: string | null
+  posterUrl: string | null
   rating: number | null
 }
 
@@ -58,7 +60,7 @@ export default function MovieOnboardPage() {
     setStep('loading')
     start(async () => {
       const result = await generateOnboardingMoviesAction(filled)
-      setMovies(result.map(m => ({ ...m, rating: null })))
+      setMovies(result.map(m => ({ ...m, posterUrl: m.posterUrl ?? null, rating: null })))
       setStep('grid')
     })
   }
@@ -131,27 +133,36 @@ export default function MovieOnboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {movies.map((movie, i) => {
             const rated = ratings[i] ?? null
             return (
               <div
                 key={i}
-                className={`rounded-lg border bg-card p-3 flex flex-col gap-2 transition-colors ${
-                  rated ? 'border-amber-400/40 bg-amber-400/5' : ''
+                className={`rounded-lg border bg-card overflow-hidden flex flex-col transition-colors ${
+                  rated ? 'border-amber-400/50' : ''
                 }`}
               >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm leading-tight">{movie.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {movie.director}{movie.year ? ` · ${movie.year}` : ''}{movie.genre ? ` · ${movie.genre}` : ''}
-                  </p>
+                <div className="aspect-2/3 relative bg-muted shrink-0">
+                  {movie.posterUrl ? (
+                    <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Film className="h-8 w-8 text-muted-foreground/20" />
+                    </div>
+                  )}
+                  {rated && (
+                    <div className="absolute top-1.5 right-1.5 bg-black/75 text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                      {rated}/10
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="p-2 flex flex-col gap-1.5 flex-1">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium leading-tight line-clamp-2">{movie.title}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{movie.director}{movie.year ? ` · ${movie.year}` : ''}</p>
+                  </div>
                   <StarRating value={rated} onChange={r => setRating(i, r)} />
-                  {rated ? (
-                    <span className="text-xs text-muted-foreground ml-1">{rated}/10</span>
-                  ) : null}
                 </div>
               </div>
             )

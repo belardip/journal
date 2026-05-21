@@ -126,7 +126,7 @@ export async function addMovieProfileContextAction(context: string) {
   revalidatePath('/movies/profile')
 }
 
-export async function generateOnboardingMoviesAction(favorites: string[]): Promise<{ title: string; director: string; year: number | null; genre: string | null }[]> {
+export async function generateOnboardingMoviesAction(favorites: string[]): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null }[]> {
   const favList = favorites.filter(Boolean).join(', ')
   const prompt = `You are a film curator. A viewer's favorite movies are: ${favList}
 
@@ -141,7 +141,23 @@ Generate a list of exactly 25 well-known films for an onboarding quiz. Rules:
 Return ONLY a JSON array of exactly 25 objects, no markdown:
 [{"title": "...", "director": "...", "year": 1994, "genre": "..."}]`
 
-  return callClaudeJson<{ title: string; director: string; year: number | null; genre: string | null }[]>(prompt, { model: OPUS, maxTokens: 2048 })
+  const movies = await callClaudeJson<{ title: string; director: string; year: number | null; genre: string | null }[]>(prompt, { model: OPUS, maxTokens: 2048 })
+
+  const enriched = await Promise.allSettled(
+    movies.map(m => enrichMovieMetadata(m.director, m.title))
+  )
+
+  return movies.map((m, i) => {
+    const result = enriched[i]
+    const meta = result.status === 'fulfilled' ? result.value : null
+    return {
+      title: meta?.title ?? m.title,
+      director: meta?.director ?? m.director,
+      year: meta?.year ?? m.year,
+      genre: meta?.genre ?? m.genre,
+      posterUrl: meta?.posterUrl ?? null,
+    }
+  })
 }
 
 export async function completeMovieOnboardingAction(
