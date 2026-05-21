@@ -126,6 +126,42 @@ export async function addMovieProfileContextAction(context: string) {
   revalidatePath('/movies/profile')
 }
 
+export async function generateOnboardingMoviesAction(favorites: string[]): Promise<{ title: string; director: string; year: number | null; genre: string | null }[]> {
+  const favList = favorites.filter(Boolean).join(', ')
+  const prompt = `You are a film curator. A viewer's favorite movies are: ${favList}
+
+Generate a list of exactly 25 well-known films for an onboarding quiz. Rules:
+- Include some films similar in style or theme to their favorites
+- Span multiple decades (1960s through 2020s)
+- Include at least 3 foreign-language films
+- Cover a range of genres: drama, thriller, comedy, sci-fi, action, horror, animation, documentary
+- Choose films acclaimed enough that most moviegoers have seen or at least heard of them
+- Do NOT include the viewer's stated favorites in the list
+
+Return ONLY a JSON array of exactly 25 objects, no markdown:
+[{"title": "...", "director": "...", "year": 1994, "genre": "..."}]`
+
+  return callClaudeJson<{ title: string; director: string; year: number | null; genre: string | null }[]>(prompt, { model: OPUS })
+}
+
+export async function completeMovieOnboardingAction(
+  ratings: { title: string; director: string; year: number | null; genre: string | null; rating: number }[]
+) {
+  await db.movie.createMany({
+    data: ratings.map(r => ({
+      title: r.title,
+      director: r.director,
+      year: r.year,
+      genre: r.genre,
+      status: 'watched',
+      rating: r.rating,
+      watchedAt: new Date(),
+    })),
+  })
+  revalidatePath('/movies')
+  updateMovieTasteProfileAction().catch(console.error)
+}
+
 export async function generateMovieRecommendationsAction(prompt: string) {
   const profile = await db.movieTasteProfile.findFirst()
 

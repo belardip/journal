@@ -6,8 +6,15 @@ import Link from 'next/link'
 import { MovieCard } from '@/components/movies/MovieCard'
 import { Button } from '@/components/ui/button'
 import { Film } from 'lucide-react'
+import { redirect } from 'next/navigation'
 
 export default async function MoviesPage() {
+  const [profile, watchedCount] = await Promise.all([
+    db.movieTasteProfile.findFirst(),
+    db.movie.count({ where: { status: 'watched' } }),
+  ])
+  if (!profile && watchedCount === 0) redirect('/movies/onboard')
+
   const latestBatch = await db.movieRecommendationBatch.findFirst({
     orderBy: { createdAt: 'desc' },
     include: { movies: { orderBy: { createdAt: 'asc' } } },
