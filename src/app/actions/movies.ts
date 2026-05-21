@@ -161,7 +161,7 @@ Return ONLY a JSON array of exactly 25 objects, no markdown:
 }
 
 export async function completeMovieOnboardingAction(
-  ratings: { title: string; director: string; year: number | null; genre: string | null; rating: number }[]
+  ratings: { title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rating: number }[]
 ) {
   await db.movie.createMany({
     data: ratings.map(r => ({
@@ -169,6 +169,7 @@ export async function completeMovieOnboardingAction(
       director: r.director,
       year: r.year,
       genre: r.genre,
+      posterUrl: r.posterUrl,
       status: 'watched',
       rating: r.rating,
       watchedAt: new Date(),

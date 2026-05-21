@@ -79,7 +79,7 @@ export default function MovieOnboardPage() {
   function handleDone() {
     const toSave = movies
       .map((m, i) => ({ ...m, rating: ratings[i] ?? null }))
-      .filter(m => m.rating !== null) as (OnboardMovie & { rating: number })[]
+      .filter((m): m is OnboardMovie & { rating: number } => m.rating !== null)
 
     if (!toSave.length) return
     setStep('saving')
