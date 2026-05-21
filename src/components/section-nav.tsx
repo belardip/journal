@@ -23,6 +23,15 @@ const sections = [
       { href: '/albums/profile', label: 'Profile' },
     ],
   },
+  {
+    match: (p: string) => p.startsWith('/movies'),
+    links: [
+      { href: '/movies', label: 'Picks', exact: true },
+      { href: '/movies/recommend', label: 'New picks' },
+      { href: '/movies/history', label: 'History' },
+      { href: '/movies/profile', label: 'Profile' },
+    ],
+  },
 ]
 
 export function SectionNav() {

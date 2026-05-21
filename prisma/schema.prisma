@@ -108,6 +108,67 @@ model StockHolding {
   @@map("stock_holdings")
 }
 
+model Movie {
+  id                Int                       @id @default(autoincrement())
+  batchId           Int?
+  title             String
+  director          String
+  year              Int?
+  genre             String?
+  posterUrl         String?
+  imdbId            String?
+  status            String                    @default("recommended")
+  rating            Int?
+  notes             String?
+  recommendedReason String?
+  watchedAt         DateTime?
+  createdAt         DateTime                  @default(now())
+
+  batch MovieRecommendationBatch? @relation(fields: [batchId], references: [id])
+
+  @@map("movies")
+}
+
+model MovieTasteProfile {
+  id                Int       @id @default(autoincrement())
+  summary           String?
+  favoriteGenres    String    @default("[]")
+  favoriteDirectors String    @default("[]")
+  preferredDecades  String    @default("[]")
+  moodPreferences   String    @default("[]")
+  dislikedPatterns  String    @default("[]")
+  moviesAnalyzed    Int       @default(0)
+  isUpdating        Boolean   @default(false)
+  lastUpdatedAt     DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@map("movie_taste_profiles")
+}
+
+model MovieRecommendationBatch {
+  id        Int      @id @default(autoincrement())
+  prompt    String?
+  createdAt DateTime @default(now())
+
+  movies Movie[]
+  logs   MovieRecommendationLog[]
+
+  @@map("movie_recommendation_batches")
+}
+
+model MovieRecommendationLog {
+  id        Int      @id @default(autoincrement())
+  batchId   Int
+  level     String
+  event     String
+  detail    String   @default("{}")
+  createdAt DateTime @default(now())
+
+  batch MovieRecommendationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("movie_recommendation_logs")
+}
+
 model AppSettings {
   key   String @id
   value String

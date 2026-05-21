@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
       { hostname: '*.mzstatic.com' },
       { hostname: 'coverartarchive.org' },
       { hostname: '*.coverartarchive.org' },
+      { hostname: 'm.media-amazon.com' },
     ],
   },
 };
