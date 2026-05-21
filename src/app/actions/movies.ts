@@ -141,7 +141,7 @@ Generate a list of exactly 25 well-known films for an onboarding quiz. Rules:
 Return ONLY a JSON array of exactly 25 objects, no markdown:
 [{"title": "...", "director": "...", "year": 1994, "genre": "..."}]`
 
-  return callClaudeJson<{ title: string; director: string; year: number | null; genre: string | null }[]>(prompt, { model: OPUS })
+  return callClaudeJson<{ title: string; director: string; year: number | null; genre: string | null }[]>(prompt, { model: OPUS, maxTokens: 2048 })
 }
 
 export async function completeMovieOnboardingAction(
