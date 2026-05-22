@@ -22,7 +22,13 @@ const timeOptions = [
 export default function NewEntryPage() {
   const [date, setDate] = useState<Date>(new Date())
   const [calendarOpen, setCalendarOpen] = useState(false)
-  const [timeOfDay, setTimeOfDay] = useState('')
+  const [timeOfDay, setTimeOfDay] = useState(() => {
+    const h = new Date().getHours()
+    if (h < 12) return 'morning'
+    if (h < 17) return 'afternoon'
+    if (h < 21) return 'evening'
+    return 'night'
+  })
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const router = useRouter()
