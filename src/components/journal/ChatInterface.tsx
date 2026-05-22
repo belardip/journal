@@ -112,21 +112,12 @@ export function ChatInterface({ entry, messages: initialMessages, entryWhen }: P
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b">
+      <div className="flex items-center px-5 py-3 border-b">
         <span className="text-sm font-medium text-muted-foreground">Conversation</span>
-        {sessionComplete ? (
-          <span className="text-sm text-green-600 font-medium flex items-center gap-1.5">
+        {sessionComplete && (
+          <span className="text-sm text-green-600 font-medium flex items-center gap-1.5 ml-auto">
             <CheckCircle className="h-4 w-4" /> Session saved
           </span>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleFinalize}
-            disabled={isPending || isStreaming}
-          >
-            {isPending ? 'Analyzing...' : 'Save & Close'}
-          </Button>
         )}
       </div>
 
@@ -194,7 +185,17 @@ export function ChatInterface({ entry, messages: initialMessages, entryWhen }: P
               <SendHorizonal className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-1.5">Enter to send · Shift+Enter for new line</p>
+          <div className="flex items-center justify-between mt-1.5">
+            <p className="text-xs text-muted-foreground">Enter to send · Shift+Enter for new line</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleFinalize}
+              disabled={isPending || isStreaming}
+            >
+              {isPending ? 'Analyzing...' : 'Save & Close'}
+            </Button>
+          </div>
         </div>
       )}
     </Card>
