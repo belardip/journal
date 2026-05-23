@@ -6,6 +6,12 @@ interface MovieMetaResult {
   director: string
   title: string
   rtScore: string | null
+  actors: string | null
+}
+
+function topActors(actorsStr: unknown): string | null {
+  if (typeof actorsStr !== 'string' || actorsStr === 'N/A') return null
+  return actorsStr.split(',').slice(0, 3).map(s => s.trim()).join(', ') || null
 }
 
 function similarity(a: string, b: string): number {
@@ -70,6 +76,7 @@ export async function enrichMovieMetadata(director: string, title: string): Prom
         director: (detail.Director as string) ?? director,
         title: (detail.Title as string) ?? title,
         rtScore: detailRt,
+        actors: topActors(detail.Actors),
       }
     }
 
@@ -87,6 +94,7 @@ export async function enrichMovieMetadata(director: string, title: string): Prom
       director: (data.Director as string) ?? director,
       title: (data.Title as string) ?? title,
       rtScore,
+      actors: topActors(data.Actors),
     }
   } catch {
     return null

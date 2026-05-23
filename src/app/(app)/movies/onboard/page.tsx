@@ -15,6 +15,7 @@ type OnboardMovie = {
   genre: string | null
   posterUrl: string | null
   rtScore: string | null
+  actors: string | null
   rating: number | null
 }
 
@@ -61,7 +62,7 @@ export default function MovieOnboardPage() {
     setStep('loading')
     start(async () => {
       const result = await generateOnboardingMoviesAction(filled)
-      setMovies(result.map(m => ({ ...m, posterUrl: m.posterUrl ?? null, rtScore: m.rtScore ?? null, rating: null })))
+      setMovies(result.map(m => ({ ...m, posterUrl: m.posterUrl ?? null, rtScore: m.rtScore ?? null, actors: m.actors ?? null, rating: null })))
       setStep('grid')
     })
   }

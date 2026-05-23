@@ -17,6 +17,7 @@ type CoupleMovie = {
   genre?: string | null
   posterUrl?: string | null
   rtScore?: string | null
+  actors?: string | null
   status: string
   paulRating?: number | null
   paulNotes?: string | null
@@ -171,6 +172,7 @@ export function CoupleMovieCard({ movie, compact = false }: { movie: CoupleMovie
         <div>
           <p className="font-semibold text-sm leading-tight">{movie.title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{movie.director}</p>
+          {movie.actors && <p className="text-xs text-muted-foreground/70 mt-0.5">{movie.actors}</p>}
           <div className="flex gap-1 mt-1.5 flex-wrap">
             {movie.year && <Badge variant="outline" className="text-xs py-0">{movie.year}</Badge>}
             {movie.genre && <Badge variant="outline" className="text-xs py-0">{movie.genre}</Badge>}

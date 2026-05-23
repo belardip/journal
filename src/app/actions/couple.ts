@@ -148,7 +148,7 @@ Return ONLY this JSON, no markdown:
 
 export async function generateCoupleOnboardingMoviesAction(
   paulFavorites: string[], rebeccaFavorites: string[]
-): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null }[]> {
+): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null; actors: string | null }[]> {
   const paulList = paulFavorites.filter(Boolean).join(', ')
   const rebeccaList = rebeccaFavorites.filter(Boolean).join(', ')
 
@@ -184,6 +184,7 @@ Return ONLY a JSON array of exactly 25 objects, no markdown:
       genre: meta?.genre ?? m.genre,
       posterUrl: meta?.posterUrl ?? null,
       rtScore: meta?.rtScore ?? null,
+      actors: meta?.actors ?? null,
     }
   })
 }
@@ -191,14 +192,14 @@ Return ONLY a JSON array of exactly 25 objects, no markdown:
 export async function completeCoupleOnboardingAction(
   ratings: {
     title: string; director: string; year: number | null; genre: string | null
-    posterUrl: string | null; rtScore: string | null; paulRating: number | null; rebeccaRating: number | null
+    posterUrl: string | null; rtScore: string | null; actors: string | null; paulRating: number | null; rebeccaRating: number | null
   }[]
 ) {
   const toSave = ratings.filter(r => r.paulRating !== null || r.rebeccaRating !== null)
   await db.coupleMovie.createMany({
     data: toSave.map(r => ({
       title: r.title, director: r.director, year: r.year, genre: r.genre,
-      posterUrl: r.posterUrl, rtScore: r.rtScore,
+      posterUrl: r.posterUrl, rtScore: r.rtScore, actors: r.actors,
       paulRating: r.paulRating,
       rebeccaRating: r.rebeccaRating,
       status: r.paulRating && r.rebeccaRating ? 'watched' : 'recommended',
@@ -278,7 +279,7 @@ Return ONLY a JSON array (one object per director), no markdown:
         year: meta.year ?? s.year ?? null,
         genre: meta.genre ?? s.genre ?? null,
         posterUrl: meta.posterUrl, imdbId: meta.imdbId,
-        rtScore: meta.rtScore,
+        rtScore: meta.rtScore, actors: meta.actors,
         recommendedReason: reason,
         status: 'recommended',
       },

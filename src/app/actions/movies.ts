@@ -126,7 +126,7 @@ export async function addMovieProfileContextAction(context: string) {
   revalidatePath('/movies/profile')
 }
 
-export async function generateOnboardingMoviesAction(favorites: string[]): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null }[]> {
+export async function generateOnboardingMoviesAction(favorites: string[]): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null; actors: string | null }[]> {
   const favList = favorites.filter(Boolean).join(', ')
   const prompt = `You are a film curator. A viewer's favorite movies are: ${favList}
 
@@ -157,12 +157,13 @@ Return ONLY a JSON array of exactly 25 objects, no markdown:
       genre: meta?.genre ?? m.genre,
       posterUrl: meta?.posterUrl ?? null,
       rtScore: meta?.rtScore ?? null,
+      actors: meta?.actors ?? null,
     }
   })
 }
 
 export async function completeMovieOnboardingAction(
-  ratings: { title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null; rating: number }[]
+  ratings: { title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null; actors: string | null; rating: number }[]
 ) {
   await db.movie.createMany({
     data: ratings.map(r => ({
@@ -172,6 +173,7 @@ export async function completeMovieOnboardingAction(
       genre: r.genre,
       posterUrl: r.posterUrl,
       rtScore: r.rtScore,
+      actors: r.actors,
       status: 'watched',
       rating: r.rating,
       watchedAt: new Date(),
@@ -265,6 +267,7 @@ export async function generateMovieRecommendationsAction(prompt: string) {
         posterUrl: meta.posterUrl,
         imdbId: meta.imdbId,
         rtScore: meta.rtScore,
+        actors: meta.actors,
         recommendedReason: reason,
         status: 'recommended',
       },

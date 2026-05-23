@@ -118,6 +118,7 @@ model Movie {
   posterUrl         String?
   imdbId            String?
   rtScore           String?
+  actors            String?
   status            String                    @default("recommended")
   rating            Int?
   notes             String?
@@ -199,6 +200,7 @@ model CoupleMovie {
   posterUrl         String?
   imdbId            String?
   rtScore           String?
+  actors            String?
   status            String                          @default("recommended")
   paulRating        Int?
   paulNotes         String?
