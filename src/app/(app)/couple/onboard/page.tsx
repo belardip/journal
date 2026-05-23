@@ -130,25 +130,25 @@ export default function CoupleOnboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="space-y-2">
           {movies.map((movie, i) => {
             const r = ratings[i] ?? { paul: 0, rebecca: 0 }
             const anyRated = r.paul > 0 || r.rebecca > 0
             return (
-              <div key={i} className={`rounded-lg border bg-card overflow-hidden flex flex-col ${anyRated ? 'border-amber-400/50' : ''}`}>
-                <div className="aspect-[2/3] relative bg-muted shrink-0">
+              <div key={i} className={`rounded-lg border bg-card overflow-hidden flex gap-3 p-3 ${anyRated ? 'border-amber-400/50' : ''}`}>
+                <div className="relative bg-muted shrink-0 w-10 h-14 rounded">
                   {movie.posterUrl ? (
-                    <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover" />
+                    <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover rounded" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Film className="h-8 w-8 text-muted-foreground/20" />
+                      <Film className="h-4 w-4 text-muted-foreground/20" />
                     </div>
                   )}
                 </div>
-                <div className="p-2 flex flex-col gap-2 flex-1">
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                   <div>
-                    <p className="text-xs font-medium leading-tight line-clamp-2">{movie.title}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{movie.director}{movie.year ? ` · ${movie.year}` : ''}</p>
+                    <p className="text-xs font-medium leading-tight">{movie.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{movie.director}{movie.year ? ` · ${movie.year}` : ''}</p>
                   </div>
                   <StarRow label="Paul" value={r.paul} onChange={n => setRating(i, 'paul', n)} />
                   <StarRow label="Rebecca" value={r.rebecca} onChange={n => setRating(i, 'rebecca', n)} />
