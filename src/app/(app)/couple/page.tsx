@@ -1,41 +1,40 @@
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Movies' }
+export const metadata = { title: 'Couple Movies' }
 
 import { db } from '@/lib/db'
 import Link from 'next/link'
-import { MovieCard } from '@/components/movies/MovieCard'
+import { CoupleMovieCard } from '@/components/couple/CoupleMovieCard'
 import { Button } from '@/components/ui/button'
 import { Film } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { RefreshButton } from './refresh-button'
 
-export default async function MoviesPage() {
+export default async function CoupleMoviesPage() {
   const [profile, watchedCount] = await Promise.all([
-    db.movieTasteProfile.findFirst(),
-    db.movie.count({ where: { status: 'watched' } }),
+    db.coupleTasteProfile.findFirst(),
+    db.coupleMovie.count({ where: { OR: [{ paulRating: { not: null } }, { rebeccaRating: { not: null } }] } }),
   ])
-  if (!profile && watchedCount === 0) redirect('/movies/onboard')
+  if (!profile && watchedCount === 0) redirect('/couple/onboard')
 
-  const latestBatch = await db.movieRecommendationBatch.findFirst({
+  const latestBatch = await db.coupleMovieRecommendationBatch.findFirst({
     orderBy: { createdAt: 'desc' },
     include: { movies: { orderBy: { createdAt: 'asc' } } },
   })
 
   const pendingOld = latestBatch
-    ? await db.movie.findMany({
-        where: { status: 'recommended', batchId: { not: latestBatch.id, notIn: [latestBatch.id] } },
+    ? await db.coupleMovie.findMany({
+        where: { status: 'recommended', batchId: { not: latestBatch.id } },
         orderBy: { createdAt: 'desc' },
-        include: { batch: true },
       })
     : []
 
-  const recentWatched = await db.movie.findMany({
+  const recentWatched = await db.coupleMovie.findMany({
     where: { status: 'watched' },
     orderBy: { watchedAt: 'desc' },
     take: 6,
   })
 
-  const currentMovies = latestBatch?.movies ?? []
+  const currentMovies = (latestBatch?.movies ?? []).filter(m => m.status !== 'skipped')
 
   return (
     <div className="space-y-10">
@@ -44,22 +43,20 @@ export default async function MoviesPage() {
           <h2 className="text-lg font-semibold">
             {latestBatch ? (latestBatch.prompt ? `"${latestBatch.prompt}"` : 'Latest picks') : 'No picks yet'}
           </h2>
-          {latestBatch && (
-            <RefreshButton prompt={latestBatch.prompt ?? ''} />
-          )}
+          {latestBatch && <RefreshButton prompt={latestBatch.prompt ?? ''} />}
         </div>
 
         {currentMovies.length === 0 ? (
           <div className="text-center py-24 border rounded-xl bg-muted/30">
             <Film className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
             <p className="font-medium mb-1">No recommendations yet</p>
-            <p className="text-sm text-muted-foreground mb-4">Ask for picks based on your mood or just let AI surprise you.</p>
-            <Button asChild><Link href="/movies/recommend">Get recommendations</Link></Button>
+            <p className="text-sm text-muted-foreground mb-4">Ask for picks based on your mood or let the AI surprise you both.</p>
+            <Button asChild><Link href="/couple/recommend">Get recommendations</Link></Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {currentMovies.map(movie => (
-              <MovieCard key={movie.id} movie={movie} />
+              <CoupleMovieCard key={movie.id} movie={movie} />
             ))}
           </div>
         )}
@@ -70,7 +67,7 @@ export default async function MoviesPage() {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-3">Still unwatched</h2>
           <div className="space-y-2">
             {pendingOld.map(movie => (
-              <MovieCard key={movie.id} movie={movie} compact />
+              <CoupleMovieCard key={movie.id} movie={movie} compact />
             ))}
           </div>
         </section>
@@ -78,15 +75,10 @@ export default async function MoviesPage() {
 
       {recentWatched.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Recently watched</h2>
-            <Link href="/movies/history" className="text-xs text-muted-foreground hover:text-foreground">
-              View all →
-            </Link>
-          </div>
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-3">Recently watched</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {recentWatched.map(movie => (
-              <MovieCard key={movie.id} movie={movie} compact />
+              <CoupleMovieCard key={movie.id} movie={movie} compact />
             ))}
           </div>
         </section>

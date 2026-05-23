@@ -187,3 +187,54 @@ model RecommendationLog {
 
   @@map("recommendation_logs")
 }
+
+model CoupleMovie {
+  id                Int                             @id @default(autoincrement())
+  batchId           Int?
+  title             String
+  director          String
+  year              Int?
+  genre             String?
+  posterUrl         String?
+  imdbId            String?
+  status            String                          @default("recommended")
+  paulRating        Int?
+  paulNotes         String?
+  rebeccaRating     Int?
+  rebeccaNotes      String?
+  recommendedReason String?
+  watchedAt         DateTime?
+  createdAt         DateTime                        @default(now())
+  batch             CoupleMovieRecommendationBatch? @relation(fields: [batchId], references: [id])
+
+  @@map("couple_movies")
+}
+
+model CoupleTasteProfile {
+  id               Int       @id @default(autoincrement())
+  paulSummary      String?
+  rebeccaSummary   String?
+  coupleSummary    String?
+  sharedGenres     String    @default("[]")
+  sharedDirectors  String    @default("[]")
+  sharedDecades    String    @default("[]")
+  moodPreferences  String    @default("[]")
+  paulSpecific     String    @default("[]")
+  rebeccaSpecific  String    @default("[]")
+  dislikedPatterns String    @default("[]")
+  moviesAnalyzed   Int       @default(0)
+  isUpdating       Boolean   @default(false)
+  lastUpdatedAt    DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@map("couple_taste_profiles")
+}
+
+model CoupleMovieRecommendationBatch {
+  id        Int           @id @default(autoincrement())
+  prompt    String?
+  createdAt DateTime      @default(now())
+  movies    CoupleMovie[]
+
+  @@map("couple_movie_recommendation_batches")
+}

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { AlbumCard } from '@/components/albums/AlbumCard'
 import { Button } from '@/components/ui/button'
 import { Disc3 } from 'lucide-react'
+import { RefreshButton } from './refresh-button'
 
 export default async function AlbumsPage() {
   const latestBatch = await db.recommendationBatch.findFirst({
@@ -33,10 +34,13 @@ export default async function AlbumsPage() {
     <div className="space-y-10">
       {/* Current batch */}
       <section>
-        <div className="mb-4">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">
             {latestBatch ? (latestBatch.prompt ? `"${latestBatch.prompt}"` : 'Latest picks') : 'No picks yet'}
           </h2>
+          {latestBatch && (
+            <RefreshButton prompt={latestBatch.prompt ?? ''} />
+          )}
         </div>
 
         {currentAlbums.length === 0 ? (
