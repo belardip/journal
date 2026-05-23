@@ -16,6 +16,7 @@ type Movie = {
   year?: number | null
   genre?: string | null
   posterUrl?: string | null
+  rtScore?: string | null
   status: string
   rating?: number | null
   notes?: string | null
@@ -124,7 +125,7 @@ export function MovieCard({ movie, compact = false }: { movie: Movie; compact?: 
   return (
     <div className={`rounded-xl border bg-card overflow-hidden flex flex-col ${isSkipped ? 'opacity-50' : ''}`}>
       {/* Poster */}
-      <div className="aspect-[2/3] relative bg-muted">
+      <div className="aspect-2/3 relative bg-muted">
         {movie.posterUrl ? (
           <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover" />
         ) : (
@@ -147,6 +148,11 @@ export function MovieCard({ movie, compact = false }: { movie: Movie; compact?: 
           <div className="flex gap-1 mt-1.5 flex-wrap">
             {movie.year && <Badge variant="outline" className="text-xs py-0">{movie.year}</Badge>}
             {movie.genre && <Badge variant="outline" className="text-xs py-0">{movie.genre}</Badge>}
+            {movie.rtScore && (
+              <Badge variant="outline" className="text-xs py-0 text-red-500 border-red-200">
+                🍅 {movie.rtScore}
+              </Badge>
+            )}
           </div>
         </div>
 

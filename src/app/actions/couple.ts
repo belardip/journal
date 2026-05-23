@@ -148,7 +148,7 @@ Return ONLY this JSON, no markdown:
 
 export async function generateCoupleOnboardingMoviesAction(
   paulFavorites: string[], rebeccaFavorites: string[]
-): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null }[]> {
+): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null }[]> {
   const paulList = paulFavorites.filter(Boolean).join(', ')
   const rebeccaList = rebeccaFavorites.filter(Boolean).join(', ')
 
@@ -183,6 +183,7 @@ Return ONLY a JSON array of exactly 25 objects, no markdown:
       year: meta?.year ?? m.year,
       genre: meta?.genre ?? m.genre,
       posterUrl: meta?.posterUrl ?? null,
+      rtScore: meta?.rtScore ?? null,
     }
   })
 }
@@ -190,14 +191,14 @@ Return ONLY a JSON array of exactly 25 objects, no markdown:
 export async function completeCoupleOnboardingAction(
   ratings: {
     title: string; director: string; year: number | null; genre: string | null
-    posterUrl: string | null; paulRating: number | null; rebeccaRating: number | null
+    posterUrl: string | null; rtScore: string | null; paulRating: number | null; rebeccaRating: number | null
   }[]
 ) {
   const toSave = ratings.filter(r => r.paulRating !== null || r.rebeccaRating !== null)
   await db.coupleMovie.createMany({
     data: toSave.map(r => ({
       title: r.title, director: r.director, year: r.year, genre: r.genre,
-      posterUrl: r.posterUrl,
+      posterUrl: r.posterUrl, rtScore: r.rtScore,
       paulRating: r.paulRating,
       rebeccaRating: r.rebeccaRating,
       status: r.paulRating && r.rebeccaRating ? 'watched' : 'recommended',
@@ -262,11 +263,12 @@ Return ONLY a JSON array (one object per director), no markdown:
 [{"director": "Director Name", "title": "Exact Film Title", "year": 2017, "genre": "Genre"}]`
 
   const suggestions = await callClaudeJson<{ director: string; title: string; year?: number; genre?: string }[]>(p2, { model: OPUS })
-  const reasonMap = new Map(directorPicks.map(d => [d.director.toLowerCase(), d.reason]))
 
   let saved = 0
-  for (const s of suggestions) {
+  for (let i = 0; i < suggestions.length; i++) {
     if (saved >= 3) break
+    const s = suggestions[i]
+    const reason = directorPicks[i]?.reason ?? null
     const meta = await enrichMovieMetadata(s.director, s.title)
     if (!meta) continue
     await db.coupleMovie.create({
@@ -276,7 +278,8 @@ Return ONLY a JSON array (one object per director), no markdown:
         year: meta.year ?? s.year ?? null,
         genre: meta.genre ?? s.genre ?? null,
         posterUrl: meta.posterUrl, imdbId: meta.imdbId,
-        recommendedReason: reasonMap.get(s.director.toLowerCase()) ?? null,
+        rtScore: meta.rtScore,
+        recommendedReason: reason,
         status: 'recommended',
       },
     })

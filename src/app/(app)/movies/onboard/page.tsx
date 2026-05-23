@@ -14,6 +14,7 @@ type OnboardMovie = {
   year: number | null
   genre: string | null
   posterUrl: string | null
+  rtScore: string | null
   rating: number | null
 }
 
@@ -60,7 +61,7 @@ export default function MovieOnboardPage() {
     setStep('loading')
     start(async () => {
       const result = await generateOnboardingMoviesAction(filled)
-      setMovies(result.map(m => ({ ...m, posterUrl: m.posterUrl ?? null, rating: null })))
+      setMovies(result.map(m => ({ ...m, posterUrl: m.posterUrl ?? null, rtScore: m.rtScore ?? null, rating: null })))
       setStep('grid')
     })
   }
@@ -80,6 +81,7 @@ export default function MovieOnboardPage() {
     const toSave = movies
       .map((m, i) => ({ ...m, rating: ratings[i] ?? null }))
       .filter((m): m is OnboardMovie & { rating: number } => m.rating !== null)
+      .map(m => ({ ...m, rtScore: m.rtScore ?? null }))
 
     if (!toSave.length) return
     setStep('saving')

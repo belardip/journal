@@ -126,7 +126,7 @@ export async function addMovieProfileContextAction(context: string) {
   revalidatePath('/movies/profile')
 }
 
-export async function generateOnboardingMoviesAction(favorites: string[]): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null }[]> {
+export async function generateOnboardingMoviesAction(favorites: string[]): Promise<{ title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null }[]> {
   const favList = favorites.filter(Boolean).join(', ')
   const prompt = `You are a film curator. A viewer's favorite movies are: ${favList}
 
@@ -156,12 +156,13 @@ Return ONLY a JSON array of exactly 25 objects, no markdown:
       year: meta?.year ?? m.year,
       genre: meta?.genre ?? m.genre,
       posterUrl: meta?.posterUrl ?? null,
+      rtScore: meta?.rtScore ?? null,
     }
   })
 }
 
 export async function completeMovieOnboardingAction(
-  ratings: { title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rating: number }[]
+  ratings: { title: string; director: string; year: number | null; genre: string | null; posterUrl: string | null; rtScore: string | null; rating: number }[]
 ) {
   await db.movie.createMany({
     data: ratings.map(r => ({
@@ -170,6 +171,7 @@ export async function completeMovieOnboardingAction(
       year: r.year,
       genre: r.genre,
       posterUrl: r.posterUrl,
+      rtScore: r.rtScore,
       status: 'watched',
       rating: r.rating,
       watchedAt: new Date(),
@@ -228,15 +230,17 @@ export async function generateMovieRecommendationsAction(prompt: string) {
   const p2 = `For each director below, name the single film that would best suit this viewer.\n\nTheir request: "${request}"${tasteSummary}\n\nDirectors:\n${directorList}\n\nCRITICAL: Use the exact film title as it appears in databases. Only name films you are certain exist and were directed by that director.\n\nReturn ONLY a JSON array (one object per director), no markdown:\n[{"director": "Director Name", "title": "Exact Film Title", "year": 2017, "genre": "Genre"}]`
 
   const suggestions = await callClaudeJson<{ director: string; title: string; year?: number; genre?: string }[]>(p2, { model: OPUS })
-  const reasonMap = new Map(directorPicks.map(d => [d.director.toLowerCase(), d.reason]))
 
   await db.movieRecommendationLog.create({
     data: { batchId: batch.id, level: 'info', event: 'pass2_films', detail: JSON.stringify({ count: suggestions.length, suggestions }) },
   })
 
   let saved = 0
-  for (const s of suggestions) {
+  for (let i = 0; i < suggestions.length; i++) {
     if (saved >= 3) break
+    const s = suggestions[i]
+    // Match reason by index — same order as directorPicks — not by name (avoids mismatch when Claude hallucinates wrong director)
+    const reason = directorPicks[i]?.reason ?? null
     const meta = await enrichMovieMetadata(s.director, s.title)
     const noMatch = !meta
 
@@ -260,7 +264,8 @@ export async function generateMovieRecommendationsAction(prompt: string) {
         genre: meta.genre ?? s.genre ?? null,
         posterUrl: meta.posterUrl,
         imdbId: meta.imdbId,
-        recommendedReason: reasonMap.get(s.director.toLowerCase()) ?? null,
+        rtScore: meta.rtScore,
+        recommendedReason: reason,
         status: 'recommended',
       },
     })

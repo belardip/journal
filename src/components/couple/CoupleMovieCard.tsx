@@ -16,6 +16,7 @@ type CoupleMovie = {
   year?: number | null
   genre?: string | null
   posterUrl?: string | null
+  rtScore?: string | null
   status: string
   paulRating?: number | null
   paulNotes?: string | null
@@ -146,7 +147,7 @@ export function CoupleMovieCard({ movie, compact = false }: { movie: CoupleMovie
 
   return (
     <div className={`rounded-xl border bg-card overflow-hidden flex flex-col ${isSkipped ? 'opacity-50' : ''}`}>
-      <div className="aspect-[2/3] relative bg-muted">
+      <div className="aspect-2/3 relative bg-muted">
         {movie.posterUrl ? (
           <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover" />
         ) : (
@@ -173,6 +174,11 @@ export function CoupleMovieCard({ movie, compact = false }: { movie: CoupleMovie
           <div className="flex gap-1 mt-1.5 flex-wrap">
             {movie.year && <Badge variant="outline" className="text-xs py-0">{movie.year}</Badge>}
             {movie.genre && <Badge variant="outline" className="text-xs py-0">{movie.genre}</Badge>}
+            {movie.rtScore && (
+              <Badge variant="outline" className="text-xs py-0 text-red-500 border-red-200">
+                🍅 {movie.rtScore}
+              </Badge>
+            )}
           </div>
         </div>
 

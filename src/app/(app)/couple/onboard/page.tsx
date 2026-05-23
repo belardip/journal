@@ -14,6 +14,7 @@ type OnboardMovie = {
   year: number | null
   genre: string | null
   posterUrl: string | null
+  rtScore: string | null
 }
 
 type Ratings = Record<number, { paul: number; rebecca: number }>
@@ -65,7 +66,7 @@ export default function CoupleOnboardPage() {
       const result = await generateCoupleOnboardingMoviesAction(
         paulFavs.filter(Boolean), rebeccaFavs.filter(Boolean)
       )
-      setMovies(result)
+      setMovies(result.map(m => ({ ...m, rtScore: m.rtScore ?? null })))
       setStep('grid')
     })
   }

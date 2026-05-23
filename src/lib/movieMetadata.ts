@@ -5,6 +5,7 @@ interface MovieMetaResult {
   genre: string | null
   director: string
   title: string
+  rtScore: string | null
 }
 
 function similarity(a: string, b: string): number {
@@ -52,32 +53,40 @@ export async function enrichMovieMetadata(director: string, title: string): Prom
       const detailRes = await fetch(`https://www.omdbapi.com/?i=${scored[0].r.imdbID}&apikey=${apiKey}`, {
         signal: AbortSignal.timeout(8000),
       })
-      const detail = await detailRes.json() as Record<string, string>
-      if (detail.Response === 'False') return null
+      const detail = await detailRes.json() as Record<string, unknown>
+      if ((detail.Response as string) === 'False') return null
 
-      const dirScore = similarity(director.toLowerCase(), (detail.Director ?? '').toLowerCase())
+      const dirScore = similarity(director.toLowerCase(), ((detail.Director as string) ?? '').toLowerCase())
       if (dirScore < 0.25) return null
 
+      const detailRatings = (detail.Ratings as { Source: string; Value: string }[] | undefined) ?? []
+      const detailRt = detailRatings.find(r => r.Source === 'Rotten Tomatoes')?.Value ?? null
+
       return {
-        posterUrl: detail.Poster && detail.Poster !== 'N/A' ? detail.Poster : null,
-        imdbId: detail.imdbID ?? null,
-        year: detail.Year ? parseInt(detail.Year.slice(0, 4)) : null,
-        genre: detail.Genre ? detail.Genre.split(',')[0].trim() : null,
-        director: detail.Director ?? director,
-        title: detail.Title ?? title,
+        posterUrl: detail.Poster && detail.Poster !== 'N/A' ? detail.Poster as string : null,
+        imdbId: (detail.imdbID as string) ?? null,
+        year: detail.Year ? parseInt((detail.Year as string).slice(0, 4)) : null,
+        genre: detail.Genre ? (detail.Genre as string).split(',')[0].trim() : null,
+        director: (detail.Director as string) ?? director,
+        title: (detail.Title as string) ?? title,
+        rtScore: detailRt,
       }
     }
 
-    const dirScore = similarity(director.toLowerCase(), (data.Director ?? '').toLowerCase())
+    const dirScore = similarity(director.toLowerCase(), ((data.Director as string) ?? '').toLowerCase())
     if (dirScore < 0.25) return null
 
+    const ratings = (data.Ratings as unknown as { Source: string; Value: string }[] | undefined) ?? []
+    const rtScore = ratings.find(r => r.Source === 'Rotten Tomatoes')?.Value ?? null
+
     return {
-      posterUrl: data.Poster && data.Poster !== 'N/A' ? data.Poster : null,
-      imdbId: data.imdbID ?? null,
-      year: data.Year ? parseInt(data.Year.slice(0, 4)) : null,
-      genre: data.Genre ? data.Genre.split(',')[0].trim() : null,
-      director: data.Director ?? director,
-      title: data.Title ?? title,
+      posterUrl: data.Poster && data.Poster !== 'N/A' ? data.Poster as string : null,
+      imdbId: (data.imdbID as string) ?? null,
+      year: data.Year ? parseInt((data.Year as string).slice(0, 4)) : null,
+      genre: data.Genre ? (data.Genre as string).split(',')[0].trim() : null,
+      director: (data.Director as string) ?? director,
+      title: (data.Title as string) ?? title,
+      rtScore,
     }
   } catch {
     return null
