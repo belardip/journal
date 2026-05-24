@@ -223,6 +223,10 @@ export async function generateCoupleRecommendationsAction(prompt: string) {
     orderBy: { createdAt: 'desc' }, take: 15, select: { director: true },
   })).map(m => m.director).filter((v, i, arr) => arr.indexOf(v) === i).join(', ')
 
+  const existingTitles = (await db.coupleMovie.findMany({
+    orderBy: { createdAt: 'desc' }, take: 60, select: { title: true },
+  })).map(m => m.title).join(', ')
+
   const request = prompt.trim() || "Surprise us — pick whatever you think we'd both love most right now."
   const pSection = coupleProfileSection(profile)
 
@@ -258,7 +262,7 @@ Their request: "${request}"${tasteSummary}
 Directors:
 ${directorList}
 
-CRITICAL: Use the exact film title as it appears in databases. Only name films you are certain exist and were directed by that director.
+${existingTitles ? `Do NOT suggest any of these films — they are already in the couple's library:\n${existingTitles}\n\n` : ''}CRITICAL: Use the exact film title as it appears in databases. Only name films you are certain exist and were directed by that director.
 
 Return ONLY a JSON array (one object per director), no markdown:
 [{"director": "Director Name", "title": "Exact Film Title", "year": 2017, "genre": "Genre"}]`

@@ -200,6 +200,12 @@ export async function generateMovieRecommendationsAction(prompt: string) {
     select: { director: true },
   })).map(m => m.director).filter((v, i, arr) => arr.indexOf(v) === i).join(', ')
 
+  const existingTitles = (await db.movie.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 60,
+    select: { title: true },
+  })).map(m => m.title).join(', ')
+
   const request = prompt.trim() || "Surprise me — pick whatever you think I'd love most right now."
   const pSection = profileSection(profile)
 
@@ -229,7 +235,7 @@ export async function generateMovieRecommendationsAction(prompt: string) {
   // Pass 2: pick films
   const directorList = directorPicks.map(d => `- ${d.director}`).join('\n')
   const tasteSummary = profile?.summary ? `\n\nViewer taste summary: ${profile.summary.slice(0, 300)}` : ''
-  const p2 = `For each director below, name the single film that would best suit this viewer.\n\nTheir request: "${request}"${tasteSummary}\n\nDirectors:\n${directorList}\n\nCRITICAL: Use the exact film title as it appears in databases. Only name films you are certain exist and were directed by that director.\n\nReturn ONLY a JSON array (one object per director), no markdown:\n[{"director": "Director Name", "title": "Exact Film Title", "year": 2017, "genre": "Genre"}]`
+  const p2 = `For each director below, name the single film that would best suit this viewer.\n\nTheir request: "${request}"${tasteSummary}\n\nDirectors:\n${directorList}\n\n${existingTitles ? `Do NOT suggest any of these films — they are already in the viewer's library:\n${existingTitles}\n\n` : ''}CRITICAL: Use the exact film title as it appears in databases. Only name films you are certain exist and were directed by that director.\n\nReturn ONLY a JSON array (one object per director), no markdown:\n[{"director": "Director Name", "title": "Exact Film Title", "year": 2017, "genre": "Genre"}]`
 
   const suggestions = await callClaudeJson<{ director: string; title: string; year?: number; genre?: string }[]>(p2, { model: OPUS })
 
