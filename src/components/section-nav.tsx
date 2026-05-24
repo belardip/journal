@@ -32,6 +32,14 @@ const sections = [
       { href: '/movies/profile', label: 'Profile' },
     ],
   },
+  {
+    match: (p: string) => p.startsWith('/couple'),
+    links: [
+      { href: '/couple', label: 'Picks', exact: true },
+      { href: '/couple/recommend', label: 'New picks' },
+      { href: '/couple/profile', label: 'Profile' },
+    ],
+  },
 ]
 
 export function SectionNav() {

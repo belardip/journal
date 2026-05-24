@@ -297,18 +297,19 @@ export async function generateCoupleRecommendationsAction(prompt: string) {
   const request = prompt.trim() || "Surprise us — pick whatever you think we'd both love most right now."
   const pSection = coupleProfileSection(profile)
 
-  const p1 = `You are an expert film curator recommending movies for a couple — Paul and Rebecca. Based on their joint taste profile and current request, choose 5 directors whose work they would both enjoy.
+  const p1 = `You are an expert film curator recommending movies for a couple — Paul and Rebecca. They have made a specific request — treat it as the primary directive. Use their taste profile to refine which directors within that space suit them both.
 
-## Couple's Taste Profile
-${pSection}
-
-${historyDirectors ? `## Already watched films by these directors (do not suggest again)\n${historyDirectors}\n\n` : ''}${recentDirectors ? `## Recently recommended directors (avoid repeating)\n${recentDirectors}\n\n` : ''}## Their Request
+## Their Request
 "${request}"
 
-Rules:
+## Couple's Taste Profile (use to refine, not override the request)
+${pSection}
+
+${historyDirectors ? `## Already watched films by these directors (do not suggest again)\n${historyDirectors}\n\n` : ''}${recentDirectors ? `## Recently recommended directors (avoid repeating)\n${recentDirectors}\n\n` : ''}Rules:
+- Choose 5 directors whose work directly matches the request first, then suits both people
+- If the request names a specific film or director, find directors in that same space
 - 5 different directors, no duplicates
-- Pick directors whose work suits BOTH people, not just one
-- The reason should explain why both Paul and Rebecca would enjoy it
+- The reason should explain how this director fits both the request and their shared taste
 
 Return ONLY a JSON array of 5 objects, no markdown:
 [{"director": "Director Name", "reason": "Why this suits both of them..."}]`
