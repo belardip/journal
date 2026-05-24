@@ -61,6 +61,9 @@ const apps: NavItem[] = [
     href: '/couple',
     match: (p: string) => p.startsWith('/couple'),
     action: { href: '/couple/recommend', label: 'New picks' },
+    subLinks: [
+      { href: '/couple/profile', label: 'Profile', icon: User2 },
+    ],
   },
 ]
 

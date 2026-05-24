@@ -210,6 +210,73 @@ export async function completeCoupleOnboardingAction(
   updateCoupleTasteProfileAction().catch(console.error)
 }
 
+export async function addCoupleProfileContextAction(context: string) {
+  const profile = await db.coupleTasteProfile.findFirst()
+  if (!profile) return
+
+  const sg = parseJson<string[]>(profile.sharedGenres, [])
+  const sd = parseJson<string[]>(profile.sharedDirectors, [])
+  const dec = parseJson<string[]>(profile.sharedDecades, [])
+  const m = parseJson<string[]>(profile.moodPreferences, [])
+  const ps = parseJson<string[]>(profile.paulSpecific, [])
+  const rs = parseJson<string[]>(profile.rebeccaSpecific, [])
+  const x = parseJson<string[]>(profile.dislikedPatterns, [])
+
+  const prompt = `You are updating a joint film taste profile for a couple — Paul and Rebecca.
+
+Current profile:
+Couple summary: ${profile.coupleSummary ?? 'none'}
+Paul's taste: ${profile.paulSummary ?? 'none'}
+Rebecca's taste: ${profile.rebeccaSummary ?? 'none'}
+Shared genres: ${sg.join(', ') || 'none'}
+Shared directors: ${sd.join(', ') || 'none'}
+Shared decades: ${dec.join(', ') || 'none'}
+Mood preferences: ${m.join(', ') || 'none'}
+Paul specifically likes: ${ps.join(', ') || 'none'}
+Rebecca specifically likes: ${rs.join(', ') || 'none'}
+Both dislike: ${x.join(', ') || 'none'}
+
+They have added:
+"${context}"
+
+Update the full profile incorporating the new information.
+
+Return ONLY this JSON (no markdown):
+{
+  "paul_summary": "updated 1-2 sentences on Paul's individual taste",
+  "rebecca_summary": "updated 1-2 sentences on Rebecca's individual taste",
+  "couple_summary": "updated 2-3 sentence prose on what they enjoy together",
+  "shared_genres": ["updated list"],
+  "shared_directors": ["updated list"],
+  "shared_decades": ["updated list"],
+  "mood_preferences": ["updated list"],
+  "paul_specific": ["updated list"],
+  "rebecca_specific": ["updated list"],
+  "disliked_patterns": ["updated list"]
+}`
+
+  const data = await callClaudeJson<Record<string, unknown>>(prompt, { model: OPUS, maxTokens: 2048 })
+
+  await db.coupleTasteProfile.update({
+    where: { id: profile.id },
+    data: {
+      paulSummary: data.paul_summary as string ?? profile.paulSummary,
+      rebeccaSummary: data.rebecca_summary as string ?? profile.rebeccaSummary,
+      coupleSummary: data.couple_summary as string ?? profile.coupleSummary,
+      sharedGenres: JSON.stringify(data.shared_genres ?? sg),
+      sharedDirectors: JSON.stringify(data.shared_directors ?? sd),
+      sharedDecades: JSON.stringify(data.shared_decades ?? dec),
+      moodPreferences: JSON.stringify(data.mood_preferences ?? m),
+      paulSpecific: JSON.stringify(data.paul_specific ?? ps),
+      rebeccaSpecific: JSON.stringify(data.rebecca_specific ?? rs),
+      dislikedPatterns: JSON.stringify(data.disliked_patterns ?? x),
+      lastUpdatedAt: new Date(),
+    },
+  })
+
+  revalidatePath('/couple/profile')
+}
+
 export async function generateCoupleRecommendationsAction(prompt: string) {
   const profile = await db.coupleTasteProfile.findFirst()
 
