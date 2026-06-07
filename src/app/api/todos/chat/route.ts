@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const { message } = await req.json() as { message: string }
+  const { message, clientTime } = await req.json() as { message: string; clientTime?: string }
 
   if (!message?.trim()) {
     return new Response('Bad request', { status: 400 })
@@ -32,7 +32,8 @@ export async function POST(req: Request) {
     data: { role: 'user', content: message, order },
   })
 
-  const systemPrompt = buildTodoSystemPrompt(todos)
+  const clientNow = clientTime ? new Date(clientTime) : undefined
+  const systemPrompt = buildTodoSystemPrompt(todos, clientNow)
 
   const chatMessages = [
     ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),

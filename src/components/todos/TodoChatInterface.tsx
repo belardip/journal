@@ -39,7 +39,7 @@ export function TodoChatInterface({ initialMessages }: Props) {
       const res = await fetch('/api/todos/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, clientTime: new Date().toISOString() }),
       })
 
       if (!res.body) return

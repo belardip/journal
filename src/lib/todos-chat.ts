@@ -6,8 +6,7 @@ function getDayName(date: Date) {
   return DAYS[date.getDay()]
 }
 
-function formatDeadline(deadline: Date): string {
-  const now = new Date()
+function formatDeadline(deadline: Date, now: Date): string {
   const diff = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   if (diff < 0) return `OVERDUE by ${Math.abs(diff)} day${Math.abs(diff) === 1 ? '' : 's'}`
   if (diff === 0) return 'due TODAY'
@@ -23,8 +22,8 @@ function formatEstimate(minutes: number): string {
   return m ? `~${h}h ${m}m` : `~${h}h`
 }
 
-export function buildTodoSystemPrompt(todos: Todo[]): string {
-  const now = new Date()
+export function buildTodoSystemPrompt(todos: Todo[], clientNow?: Date): string {
+  const now = clientNow ?? new Date()
   const hour = now.getHours()
   const dayName = getDayName(now)
   const timeLabel = hour < 5 ? 'late night' : hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night'
@@ -38,7 +37,7 @@ export function buildTodoSystemPrompt(todos: Todo[]): string {
     const parts: string[] = [`- ${t.title}`]
     const meta: string[] = []
     if (t.priority >= 1) meta.push('HIGH PRIORITY')
-    if (t.deadline) meta.push(formatDeadline(new Date(t.deadline)))
+    if (t.deadline) meta.push(formatDeadline(new Date(t.deadline), now))
     if (t.estimatedMinutes) meta.push(formatEstimate(t.estimatedMinutes))
     if (t.isRecurring) {
       try {
