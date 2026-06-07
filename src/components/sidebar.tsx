@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { BookOpen, Disc3, TrendingUp, Plus, Clock, User2, Sparkles, LogOut, BarChart2, Film, Heart } from 'lucide-react'
+import { BookOpen, Disc3, TrendingUp, Plus, Clock, User2, Sparkles, LogOut, BarChart2, Film, Heart, CheckSquare } from 'lucide-react'
 import { logoutAllAction } from '@/app/actions/auth'
 
 type NavItem = {
@@ -16,6 +16,12 @@ type NavItem = {
 }
 
 const apps: NavItem[] = [
+  {
+    label: 'Todos',
+    icon: CheckSquare,
+    href: '/todos',
+    match: (p: string) => p.startsWith('/todos'),
+  },
   {
     label: 'Journal',
     icon: BookOpen,

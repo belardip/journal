@@ -242,3 +242,30 @@ model CoupleMovieRecommendationBatch {
 
   @@map("couple_movie_recommendation_batches")
 }
+
+model Todo {
+  id               Int       @id @default(autoincrement())
+  title            String
+  notes            String?
+  deadline         DateTime?
+  isRecurring      Boolean   @default(false)
+  recurringDays    String    @default("[]")
+  estimatedMinutes Int?
+  priority         Int       @default(0)
+  isComplete       Boolean   @default(false)
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("todos")
+}
+
+model TodoChatMessage {
+  id        Int      @id @default(autoincrement())
+  role      String
+  content   String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("todo_chat_messages")
+}
