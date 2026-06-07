@@ -18,14 +18,6 @@ export function TodoChatInterface({ initialMessages }: Props) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingText, setStreamingText] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
-  const triggered = useRef(false)
-
-  useEffect(() => {
-    if (messages.length === 0 && !triggered.current) {
-      triggered.current = true
-      sendRaw("Hey, I've got some free time. What should I work on?")
-    }
-  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -93,8 +85,6 @@ export function TodoChatInterface({ initialMessages }: Props) {
   async function clearChat() {
     await fetch('/api/todos/chat', { method: 'DELETE' })
     setMessages([])
-    triggered.current = false
-    sendRaw("Hey, I've got some free time. What should I work on?")
   }
 
   return (
