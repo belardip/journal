@@ -71,10 +71,16 @@ Before building a new UI component, check `src/components/` for an existing one 
 | Component | Path | Used by |
 |-----------|------|---------|
 | `StreamingChat` | `src/components/streaming-chat.tsx` | Journal chat, Todos AI assistant |
+| `RatingButtons` | `src/components/rating-buttons.tsx` | AlbumCard, MovieCard |
+| `RecommendationForm` | `src/components/recommendation-form.tsx` | Albums, Movies, Couple recommend pages |
 
-**StreamingChat** handles all streaming SSE chat UI: message bubbles, loading dots, auto-scroll, input + send. Accepts `apiUrl`, `initialMessages`, optional `autoSendFirst` (hidden auto-send on mount), `headerActions` and `footerExtra` render props for feature-specific controls.
+**StreamingChat** — streaming SSE chat UI: bubbles, loading dots, auto-scroll, input + send. Accepts `apiUrl`, `initialMessages`, optional `autoSendFirst`, `headerActions` and `footerExtra` render props.
 
-When adding a new AI chat surface, use `StreamingChat` — do not copy the streaming logic again.
+**RatingButtons** — 10-star rating widget with notes textarea. Accepts `onRate(rating, notes)` callback and `onDone`.
+
+**RecommendationForm** — mood-chip + textarea form for AI recommendation flows. Accepts `onSubmit(prompt)`, `successHref`, `cancelHref`, `icon`, `moods`, `title`, `description`, `placeholder`.
+
+When adding a new feature, check here first — do not copy these patterns again.
 
 ## Prisma 7 — Critical
 Always use the adapter. Never `new PrismaClient()` without it. See `src/lib/db.ts`.

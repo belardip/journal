@@ -1,0 +1,100 @@
+'use client'
+
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+
+interface Props {
+  title: string
+  description: string
+  placeholder: string
+  moods: string[]
+  icon: React.ElementType
+  loadingLabel?: string
+  onSubmit: (prompt: string) => Promise<void>
+  successHref: string
+  cancelHref: string
+}
+
+export function RecommendationForm({
+  title,
+  description,
+  placeholder,
+  moods,
+  icon: Icon,
+  loadingLabel = 'Finding your picks…',
+  onSubmit,
+  successHref,
+  cancelHref,
+}: Props) {
+  const [prompt, setPrompt] = useState('')
+  const [isPending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    start(async () => {
+      try {
+        await onSubmit(prompt.trim())
+        router.push(successHref)
+      } catch {
+        setError('The AI service is busy right now — try again in a moment.')
+      }
+    })
+  }
+
+  return (
+    <div className="max-w-lg">
+      <h1 className="text-xl font-semibold mb-1">{title}</h1>
+      <p className="text-sm text-muted-foreground mb-6">{description}</p>
+
+      {isPending ? (
+        <div className="flex flex-col items-center gap-4 py-16 text-muted-foreground">
+          <Icon className="h-10 w-10 animate-spin" />
+          <div className="text-center">
+            <p className="font-medium text-foreground">{loadingLabel}</p>
+            <p className="text-sm mt-1">This takes about 20–30 seconds.</p>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={submit} className="space-y-4">
+          <Textarea
+            placeholder={placeholder}
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            rows={3}
+            className="resize-none"
+          />
+
+          <div className="flex flex-wrap gap-2">
+            {moods.map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setPrompt(p => p ? p : m)}
+                className="text-xs px-3 py-1.5 rounded-full border hover:bg-muted transition-colors"
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <div className="flex gap-3">
+            <Button type="submit" className="flex-1">
+              <Icon className="h-4 w-4 mr-2" />
+              Get recommendations
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.push(cancelHref)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}

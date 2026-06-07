@@ -4,8 +4,8 @@ import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import { rateMovieAction, skipMovieAction } from '@/app/actions/movies'
 import { ratingColor } from '@/lib/albums'
+import { RatingButtons } from '@/components/rating-buttons'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Film, Star, SkipForward, ChevronDown, ChevronUp, X } from 'lucide-react'
 
@@ -22,54 +22,6 @@ type Movie = {
   rating?: number | null
   notes?: string | null
   recommendedReason?: string | null
-}
-
-function RatingButtons({ movieId, onDone }: { movieId: number; onDone?: () => void }) {
-  const [rating, setRating] = useState(0)
-  const [hover, setHover] = useState(0)
-  const [notes, setNotes] = useState('')
-  const [isPending, start] = useTransition()
-
-  function submit() {
-    if (!rating) return
-    start(async () => {
-      await rateMovieAction(movieId, rating, notes)
-      onDone?.()
-    })
-  }
-
-  return (
-    <div className="space-y-2 pt-2 border-t">
-      <div className="flex gap-1">
-        {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
-          <button
-            key={n}
-            onClick={() => setRating(n)}
-            onMouseEnter={() => setHover(n)}
-            onMouseLeave={() => setHover(0)}
-            className={`text-lg leading-none transition-colors ${
-              n <= (hover || rating) ? 'text-amber-400' : 'text-muted-foreground/30'
-            }`}
-          >
-            ★
-          </button>
-        ))}
-        {rating > 0 && <span className="text-xs text-muted-foreground ml-1 self-center">{rating}/10</span>}
-      </div>
-      <Textarea
-        placeholder="Notes (optional)"
-        value={notes}
-        onChange={e => setNotes(e.target.value)}
-        rows={2}
-        className="text-sm resize-none"
-      />
-      <div className="flex gap-2">
-        <Button size="sm" disabled={!rating || isPending} onClick={submit}>
-          {isPending ? 'Saving…' : 'Rate'}
-        </Button>
-      </div>
-    </div>
-  )
 }
 
 export function MovieCard({ movie, compact = false }: { movie: Movie; compact?: boolean }) {
@@ -99,10 +51,7 @@ export function MovieCard({ movie, compact = false }: { movie: Movie; compact?: 
         )}
         {isRecommended && (
           <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => setExpanded(e => !e)}
-              className="text-muted-foreground hover:text-foreground p-1"
-            >
+            <button onClick={() => setExpanded(e => !e)} className="text-muted-foreground hover:text-foreground p-1">
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
             <button
@@ -116,7 +65,10 @@ export function MovieCard({ movie, compact = false }: { movie: Movie; compact?: 
         )}
         {expanded && isRecommended && (
           <div className="absolute mt-24 z-10 bg-card border rounded-lg shadow-lg p-3 w-64">
-            <RatingButtons movieId={movie.id} onDone={() => setExpanded(false)} />
+            <RatingButtons
+              onRate={(rating, notes) => rateMovieAction(movie.id, rating, notes)}
+              onDone={() => setExpanded(false)}
+            />
           </div>
         )}
       </div>
@@ -125,7 +77,6 @@ export function MovieCard({ movie, compact = false }: { movie: Movie; compact?: 
 
   return (
     <div className={`rounded-xl border bg-card overflow-hidden flex flex-col ${isSkipped ? 'opacity-50' : ''}`}>
-      {/* Poster */}
       <div className="aspect-2/3 relative bg-muted">
         {movie.posterUrl ? (
           <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover" />
@@ -141,7 +92,6 @@ export function MovieCard({ movie, compact = false }: { movie: Movie; compact?: 
         )}
       </div>
 
-      {/* Info */}
       <div className="p-3 flex-1 flex flex-col gap-2">
         <div>
           <p className="font-semibold text-sm leading-tight">{movie.title}</p>
@@ -170,7 +120,10 @@ export function MovieCard({ movie, compact = false }: { movie: Movie; compact?: 
           <div className="mt-auto space-y-2 border-t pt-2">
             {expanded ? (
               <>
-                <RatingButtons movieId={movie.id} onDone={() => setExpanded(false)} />
+                <RatingButtons
+                  onRate={(rating, notes) => rateMovieAction(movie.id, rating, notes)}
+                  onDone={() => setExpanded(false)}
+                />
                 <button onClick={() => setExpanded(false)} className="text-xs text-muted-foreground hover:text-foreground">
                   Cancel
                 </button>
