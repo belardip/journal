@@ -61,6 +61,7 @@ model Album {
   genre             String?
   artworkUrl        String?
   itunesId          String?
+  spotifyUrl        String?
   status            String               @default("recommended")
   rating            Int?
   notes             String?

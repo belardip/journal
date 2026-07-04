@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { callClaudeJson } from '@/lib/ai'
 import { enrichAlbumMetadata } from '@/lib/metadata'
+import { getSpotifyAlbumUrl } from '@/lib/spotify'
+import { getSimilarArtists, getTopAlbums } from '@/lib/lastfm'
 import { parseJson } from '@/lib/albums'
 
 const OPUS = 'claude-opus-4-7'
@@ -172,12 +174,13 @@ export async function saveProfileSetupAction(formData: FormData) {
 export async function generateRecommendationsAction(prompt: string) {
   const profile = await db.tasteProfile.findFirst()
 
-  const historyArtists = (await db.album.findMany({
+  const historyArtistsArr = (await db.album.findMany({
     where: { status: 'listened' },
     orderBy: { listenedAt: 'desc' },
     take: 20,
     select: { artist: true },
-  })).map(a => a.artist).filter((v, i, arr) => arr.indexOf(v) === i).join(', ')
+  })).map(a => a.artist).filter((v, i, arr) => arr.indexOf(v) === i)
+  const historyArtists = historyArtistsArr.join(', ')
 
   const recentArtists = (await db.album.findMany({
     where: { batchId: { not: null } },
@@ -189,8 +192,21 @@ export async function generateRecommendationsAction(prompt: string) {
   const request = prompt.trim() || "Surprise me — pick whatever you think I'd love most right now."
   const pSection = profileSection(profile)
 
+  // Ground Pass 1 in real "fans of X also like Y" data from a couple of known-liked
+  // seed artists, so suggestions aren't purely the LLM's own parametric memory.
+  // This is inspiration, not a hard restriction — Claude can still pick outside it
+  // when the request calls for something unrelated to past taste.
+  const favoriteArtists = parseJson<string[]>(profile?.favoriteArtists ?? '[]', [])
+  const seedArtists = (favoriteArtists.length ? favoriteArtists : historyArtistsArr).slice(0, 3)
+  const similarPool = (await Promise.all(seedArtists.map(a => getSimilarArtists(a, 8))))
+    .flat()
+    .filter((v, i, arr) => arr.indexOf(v) === i)
+    .filter(a => !historyArtistsArr.some(h => h.toLowerCase() === a.toLowerCase()))
+    .slice(0, 15)
+    .join(', ')
+
   // Pass 1: pick artists
-  const p1 = `You are an expert music curator. Based on this listener's taste profile and current request, choose 5 artists whose work they would love.\n\n## Listener's Taste Profile\n${pSection}\n\n${historyArtists ? `## Already listened to (do not suggest these artists again)\n${historyArtists}\n\n` : ''}${recentArtists ? `## Recently recommended (avoid repeating these artists)\n${recentArtists}\n\n` : ''}## Their Request\n"${request}"\n\nRules:\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), treat it as a strict requirement, not a vibe — every pick must actually satisfy it\n- 5 different artists, no duplicates\n- Vary the suggestions — don't cluster around one sub-genre\n- The reason should be 2-3 sentences specific to this listener's taste\n- If you swap an artist for a related one (e.g. because the first is already listened to), the "artist" field must be the swapped-to artist, not the original\n\nReturn ONLY a JSON array of 5 objects, no markdown:\n[{"artist": "Artist Name", "reason": "Why this fits..."}]`
+  const p1 = `You are an expert music curator. Based on this listener's taste profile and current request, choose 5 artists whose work they would love.\n\n## Listener's Taste Profile\n${pSection}\n\n${historyArtists ? `## Already listened to (do not suggest these artists again)\n${historyArtists}\n\n` : ''}${recentArtists ? `## Recently recommended (avoid repeating these artists)\n${recentArtists}\n\n` : ''}${similarPool ? `## Real artists similar to ones they already like (optional inspiration, not required)\n${similarPool}\n\n` : ''}## Their Request\n"${request}"\n\nRules:\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), treat it as a strict requirement, not a vibe — every pick must actually satisfy it\n- 5 different artists, no duplicates\n- Vary the suggestions — don't cluster around one sub-genre\n- The reason should be 2-3 sentences specific to this listener's taste\n- If you swap an artist for a related one (e.g. because the first is already listened to), the "artist" field must be the swapped-to artist, not the original\n\nReturn ONLY a JSON array of 5 objects, no markdown:\n[{"artist": "Artist Name", "reason": "Why this fits..."}]`
 
   const artistPicks = await callClaudeJson<{ artist: string; reason: string }[]>(p1, { model: OPUS })
 
@@ -201,7 +217,7 @@ export async function generateRecommendationsAction(prompt: string) {
       batchId: batch.id,
       level: 'info',
       event: 'pass1_artists',
-      detail: JSON.stringify({ prompt: prompt || '(none)', count: artistPicks.length, artists: artistPicks }),
+      detail: JSON.stringify({ prompt: prompt || '(none)', count: artistPicks.length, artists: artistPicks, similarPoolUsed: similarPool || '(none)' }),
     },
   })
 
@@ -212,16 +228,26 @@ export async function generateRecommendationsAction(prompt: string) {
     return batch.id
   }
 
+  // Ground Pass 2 in each artist's real discography via Last.fm, so the album pick
+  // has to be a title that actually exists rather than a name recalled from memory.
+  // Falls back to free-form naming only when Last.fm has no data for that artist.
+  const topAlbumsByArtist = await Promise.all(artistPicks.map(a => getTopAlbums(a.artist, 15)))
+  const artistList = artistPicks.map((a, i) => {
+    const albums = topAlbumsByArtist[i]
+    return albums.length
+      ? `- ${a.artist}\n  Available albums (pick ONE of these exactly, do not invent a different title): ${albums.join(', ')}`
+      : `- ${a.artist}\n  (no verified discography found — use your best knowledge, but only if you are certain the album exists)`
+  }).join('\n')
+
   // Pass 2: pick albums
-  const artistList = artistPicks.map(a => `- ${a.artist}`).join('\n')
   const tasteSummary = profile?.summary ? `\n\nListener taste summary: ${profile.summary.slice(0, 300)}` : ''
-  const p2 = `For each artist below, name the single album that would best suit this listener.\n\nTheir request: "${request}"${tasteSummary}\n\nArtists:\n${artistList}\n\nCRITICAL:\n- Use the exact album title as it appears in music databases. Only name albums you are certain exist.\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), the album you pick MUST actually satisfy it — check the real release year against it before answering. Do not default to an artist's best-known or classic album if it violates the constraint; pick a different, qualifying album by that artist instead.\n\nReturn ONLY a JSON array (one object per artist), no markdown:\n[{"artist": "Artist Name", "title": "Exact Album Title", "year": 2017, "genre": "Genre"}]`
+  const p2 = `For each artist below, name the single album that would best suit this listener.\n\nTheir request: "${request}"${tasteSummary}\n\nArtists:\n${artistList}\n\nCRITICAL:\n- When an artist has an "Available albums" list, your answer MUST be one of those exact titles — never invent a different one.\n- When no list is given, use the exact album title as it appears in music databases, and only name an album you are certain exists.\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), the album you pick MUST actually satisfy it. Do not default to an artist's best-known or classic album if it violates the constraint; pick a different, qualifying album from the list instead.\n\nReturn ONLY a JSON array (one object per artist), no markdown:\n[{"artist": "Artist Name", "title": "Exact Album Title", "year": 2017, "genre": "Genre"}]`
 
   const suggestions = await callClaudeJson<{ artist: string; title: string; year?: number; genre?: string }[]>(p2, { model: OPUS })
   const reasonMap = new Map(artistPicks.map(a => [a.artist.toLowerCase(), a.reason]))
 
   await db.recommendationLog.create({
-    data: { batchId: batch.id, level: 'info', event: 'pass2_albums', detail: JSON.stringify({ count: suggestions.length, suggestions }) },
+    data: { batchId: batch.id, level: 'info', event: 'pass2_albums', detail: JSON.stringify({ count: suggestions.length, suggestions, groundedArtists: artistPicks.filter((_, i) => topAlbumsByArtist[i].length).map(a => a.artist) }) },
   })
 
   let saved = 0
@@ -241,6 +267,8 @@ export async function generateRecommendationsAction(prompt: string) {
 
     if (noMatch) continue
 
+    const spotifyUrl = await getSpotifyAlbumUrl(meta.artist, meta.title)
+
     await db.album.create({
       data: {
         batchId: batch.id,
@@ -250,6 +278,7 @@ export async function generateRecommendationsAction(prompt: string) {
         genre: meta.genre,
         artworkUrl: meta.artworkUrl,
         itunesId: meta.itunesId,
+        spotifyUrl,
         recommendedReason: reasonMap.get(s.artist.toLowerCase()) ?? null,
         status: 'recommended',
       },

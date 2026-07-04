@@ -89,7 +89,7 @@ function bigrams(s: string): string[] {
   return grams
 }
 
-function similarity(a: string, b: string): number {
+export function similarity(a: string, b: string): number {
   if (a === b) return 1
   const ga = bigrams(a)
   const gb = bigrams(b)
