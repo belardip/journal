@@ -78,16 +78,32 @@ async function artworkFromMusicBrainz(artist: string, title: string): Promise<st
   }
 }
 
+// Sørensen–Dice coefficient over character bigrams. Unlike a raw character-
+// presence check, this is sensitive to letter *order* and *multiplicity*, so
+// two short strings that merely share a few letters (e.g. "L'Instant" vs
+// "Creatures") score close to 0 instead of misleadingly close to 1.
+function bigrams(s: string): string[] {
+  const clean = s.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const grams: string[] = []
+  for (let i = 0; i < clean.length - 1; i++) grams.push(clean.slice(i, i + 2))
+  return grams
+}
+
 function similarity(a: string, b: string): number {
   if (a === b) return 1
-  const longer = a.length > b.length ? a : b
-  const shorter = a.length > b.length ? b : a
-  if (!longer.length) return 1
+  const ga = bigrams(a)
+  const gb = bigrams(b)
+  if (!ga.length || !gb.length) return a.toLowerCase() === b.toLowerCase() ? 1 : 0
+  const pool = [...gb]
   let matches = 0
-  for (let i = 0; i < shorter.length; i++) {
-    if (longer.includes(shorter[i])) matches++
+  for (const g of ga) {
+    const idx = pool.indexOf(g)
+    if (idx !== -1) {
+      matches++
+      pool.splice(idx, 1)
+    }
   }
-  return matches / longer.length
+  return (2 * matches) / (ga.length + gb.length)
 }
 
 export async function enrichAlbumMetadata(artist: string, title: string): Promise<MetaResult | null> {
