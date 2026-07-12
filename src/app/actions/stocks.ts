@@ -68,8 +68,7 @@ export async function getTickerBreakdownAction({
 Search for recent news and explain in 3-5 sentences what's been driving this price movement. Be direct and specific. No company background, no jargon without explanation.`,
     }],
   })
-  const textBlocks = msg.content.filter(b => b.type === 'text')
-  return textBlocks[textBlocks.length - 1]?.text ?? ''
+  return msg.content.filter(b => b.type === 'text').map(b => b.text).join('\n\n').trim()
 }
 
 export async function getPortfolioNewsAction(
@@ -99,6 +98,5 @@ export async function getPortfolioNewsAction(
     }],
   })
 
-  const textBlocks = msg.content.filter(b => b.type === 'text')
-  return textBlocks[textBlocks.length - 1]?.text ?? ''
+  return msg.content.filter(b => b.type === 'text').map(b => b.text).join('\n\n').trim()
 }
