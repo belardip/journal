@@ -65,15 +65,11 @@ export async function getTickerBreakdownAction({
       role: 'user',
       content: `The stock ${ticker} (${name}) is ${changePercent >= 0 ? 'up' : 'down'} ${Math.abs(changePercent).toFixed(1)}% over the last ${rangeLabel[range] ?? range}.
 
-Search for recent news and write me a plain-English breakdown (4-6 sentences):
-1. What's been driving the price movement recently
-2. What this company actually does (one sentence, simple)
-3. One key number that matters right now and what it means in plain English — avoid jargon, or explain any term you use in plain language
-
-Be direct and specific. Don't be vague or cheerful.`,
+Search for recent news and explain in 3-5 sentences what's been driving this price movement. Be direct and specific. No company background, no jargon without explanation.`,
     }],
   })
-  return msg.content.find(b => b.type === 'text')?.text ?? ''
+  const textBlocks = msg.content.filter(b => b.type === 'text')
+  return textBlocks[textBlocks.length - 1]?.text ?? ''
 }
 
 export async function getPortfolioNewsAction(
@@ -103,5 +99,6 @@ export async function getPortfolioNewsAction(
     }],
   })
 
-  return msg.content.find(b => b.type === 'text')?.text ?? ''
+  const textBlocks = msg.content.filter(b => b.type === 'text')
+  return textBlocks[textBlocks.length - 1]?.text ?? ''
 }
