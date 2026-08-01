@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { SendHorizonal } from 'lucide-react'
+import { SendHorizonal, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import ReactMarkdown from 'react-markdown'
@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown'
 type Message = { role: 'user' | 'assistant'; content: string }
 
 export function StocksChat() {
+  const [isOpen, setIsOpen] = useState(true)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -76,22 +77,43 @@ export function StocksChat() {
     }
   }
 
+  if (!isOpen) {
+    return (
+      <div className="w-13 shrink-0 border-l flex flex-col items-center pt-5 bg-muted/20">
+        <button
+          onClick={() => setIsOpen(true)}
+          title="Open Portfolio Advisor"
+          className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <PanelRightOpen className="h-4.25 w-4.25" />
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-6 py-4 border-b shrink-0">
-        <span className="text-sm font-medium text-muted-foreground">Portfolio Advisor</span>
+    <div className="w-80 shrink-0 border-l flex flex-col bg-muted/10">
+      <div className="px-5 py-4 border-b flex items-center justify-between shrink-0">
+        <span className="text-[13px] font-semibold">Portfolio Advisor</span>
+        <button
+          onClick={() => setIsOpen(false)}
+          title="Collapse"
+          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <PanelRightClose className="h-4 w-4" />
+        </button>
       </div>
 
-      <div className="flex-1 px-6 py-5 space-y-4 overflow-y-auto min-h-0">
+      <div className="flex-1 px-5 py-5 space-y-4 overflow-y-auto min-h-0">
         {messages.length === 0 && !isStreaming && (
-          <p className="text-sm text-muted-foreground text-center pt-12">
-            Ask me anything about your portfolio — what to buy, sell, rebalance, or how to think about a position.
+          <p className="text-[13px] text-muted-foreground leading-relaxed pt-3">
+            Ask about your holdings — what to buy, sell, or rebalance.
           </p>
         )}
 
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed max-w-[75%] ${
+            <div className={`rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed max-w-[88%] ${
               msg.role === 'user'
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-foreground prose prose-sm dark:prose-invert'
@@ -103,7 +125,7 @@ export function StocksChat() {
 
         {streamingText && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl px-4 py-3 text-sm leading-relaxed max-w-[75%] prose prose-sm dark:prose-invert">
+            <div className="bg-muted rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed max-w-[88%] prose prose-sm dark:prose-invert">
               <ReactMarkdown>{streamingText}</ReactMarkdown>
             </div>
           </div>
@@ -111,7 +133,7 @@ export function StocksChat() {
 
         {isStreaming && !streamingText && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl px-4 py-3">
+            <div className="bg-muted rounded-2xl px-4 py-2.5">
               <span className="inline-flex gap-1 text-muted-foreground">
                 <span className="animate-bounce text-base leading-none">·</span>
                 <span className="animate-bounce text-base leading-none [animation-delay:0.15s]">·</span>
@@ -124,8 +146,8 @@ export function StocksChat() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t px-6 py-4 shrink-0">
-        <div className="flex gap-3 items-end">
+      <div className="border-t px-5 py-4 shrink-0">
+        <div className="flex gap-2 items-end">
           <Textarea
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -137,19 +159,19 @@ export function StocksChat() {
             }}
             disabled={isStreaming}
             rows={2}
-            placeholder="Ask about your portfolio…"
-            className="flex-1 resize-none text-sm"
+            placeholder="Ask a question…"
+            className="flex-1 resize-none text-[13px]"
           />
           <Button
             onClick={send}
             disabled={isStreaming || !input.trim()}
             size="icon"
-            className="self-end shrink-0"
+            className="self-end shrink-0 h-8 w-8 rounded-[9px]"
           >
-            <SendHorizonal className="h-4 w-4" />
+            <SendHorizonal className="h-3.5 w-3.5" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">Enter to send · Shift+Enter for new line</p>
+        <p className="text-xs text-muted-foreground mt-1.5">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   )

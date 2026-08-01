@@ -1,11 +1,10 @@
 'use client'
 
 import { Fragment, useState, useTransition } from 'react'
-import { Trash2, Pencil, Check, X, ChevronDown, ChevronUp, LineChart, Sparkles } from 'lucide-react'
+import { Trash2, Pencil, Check, X, ChevronDown, ChevronUp, LineChart } from 'lucide-react'
 import Link from 'next/link'
-import { removeHoldingAction, updateHoldingAction, getTickerBreakdownAction } from '@/app/actions/stocks'
+import { removeHoldingAction, updateHoldingAction } from '@/app/actions/stocks'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export type HoldingRow = {
   ticker: string
@@ -70,9 +69,6 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [removing, startRemoving] = useTransition()
-  const [aiTicker, setAiTicker] = useState<string | null>(null)
-  const [aiResult, setAiResult] = useState<string | null>(null)
-  const [aiPending, startAi] = useTransition()
 
   function toggle(ticker: string) {
     setExpanded(e => e === ticker ? null : ticker)
@@ -83,178 +79,108 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
     startRemoving(async () => { await removeHoldingAction(ticker) })
   }
 
-  function runAi(h: HoldingRow) {
-    if (aiTicker === h.ticker) {
-      setAiTicker(null)
-      setAiResult(null)
-      return
-    }
-    setAiTicker(h.ticker)
-    setAiResult(null)
-    startAi(async () => {
-      const result = await getTickerBreakdownAction({
-        ticker: h.ticker, name: h.name, changePercent: h.m1, range: '1mo',
-      })
-      setAiResult(result)
-    })
-  }
-
-  const totalValue = holdings.reduce((s, h) => s + h.marketValue, 0)
-  const totalCost = holdings.reduce((s, h) => s + h.costBasis, 0)
-  const totalGain = totalValue - totalCost
-  const totalGainPct = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
-
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-3 p-4 bg-muted rounded-lg">
-        <div>
-          <p className="text-xs text-muted-foreground">Portfolio value</p>
-          <p className="font-semibold">{money(totalValue)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Total cost</p>
-          <p className="font-semibold">{money(totalCost)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Total gain/loss</p>
-          <p className="font-semibold"><ColorPct n={totalGainPct} /></p>
-        </div>
-      </div>
-
-      <div className="flex gap-4 items-start">
-        <div className="flex-1 min-w-0 relative">
-          <table className="w-full">
-            <thead>
-              <tr className="text-xs text-muted-foreground border-b">
-                <th className="font-normal text-left pb-2">Stock</th>
-                <th className="font-normal text-right pb-2">1W</th>
-                <th className="font-normal text-right pb-2">1M</th>
-                <th className="font-normal text-right pb-2">6M</th>
-                <th className="font-normal text-right pb-2">1Y</th>
-                <th className="font-normal text-right pb-2">Gain</th>
-                <th className="hidden md:table-cell pb-2 w-16"></th>
-                <th className="pb-2 w-4"></th>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-170 border-collapse">
+        <colgroup>
+          <col style={{ width: '26%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '9%' }} />
+          <col style={{ width: '9%' }} />
+          <col style={{ width: '9%' }} />
+          <col style={{ width: '9%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '24px' }} />
+        </colgroup>
+        <thead>
+          <tr className="text-xs text-muted-foreground border-b">
+            <th className="font-medium text-left pb-3">Stock</th>
+            <th className="font-medium text-right pb-3">Price</th>
+            <th className="font-medium text-right pb-3">1W</th>
+            <th className="font-medium text-right pb-3">1M</th>
+            <th className="font-medium text-right pb-3">6M</th>
+            <th className="font-medium text-right pb-3">1Y</th>
+            <th className="font-medium text-right pb-3">Gain</th>
+            <th className="pb-3" />
+          </tr>
+        </thead>
+        <tbody>
+          {holdings.map(h => (
+            <Fragment key={h.ticker}>
+              <tr
+                onClick={() => toggle(h.ticker)}
+                className="border-t border-border/60 cursor-pointer hover:bg-muted/40 transition-colors"
+              >
+                <td className="py-4.5 pr-3 overflow-hidden">
+                  <div className="flex items-baseline gap-2 overflow-hidden">
+                    <span className="font-mono font-semibold text-sm">{h.ticker}</span>
+                    <span className="text-[13px] text-muted-foreground truncate">{h.name}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {h.shares} shares · avg {money(h.avgPrice)}
+                  </div>
+                </td>
+                <td className="text-right py-4.5 text-sm font-medium tabular-nums">{money(h.price)}</td>
+                <td className="text-right py-4.5 text-xs"><ColorPct n={h.w1} /></td>
+                <td className="text-right py-4.5 text-xs"><ColorPct n={h.m1} /></td>
+                <td className="text-right py-4.5 text-xs"><ColorPct n={h.m6} /></td>
+                <td className="text-right py-4.5 text-xs"><ColorPct n={h.y1} /></td>
+                <td className="text-right py-4.5 text-[13px] font-medium"><ColorPct n={h.gainLossPercent} /></td>
+                <td className="py-4.5 pl-3 text-muted-foreground">
+                  {expanded === h.ticker
+                    ? <ChevronUp className="h-3.75 w-3.75 opacity-40" />
+                    : <ChevronDown className="h-3.75 w-3.75 opacity-40" />}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {holdings.map(h => (
-                <Fragment key={h.ticker}>
-                  <tr
-                    onClick={() => toggle(h.ticker)}
-                    className="border-b cursor-pointer hover:bg-muted/40 transition-colors"
-                  >
-                    <td className="py-3 pr-2">
-                      <div className="font-mono font-semibold text-sm">{h.ticker}</div>
-                      <div className="text-xs text-muted-foreground truncate max-w-24">{h.name}</div>
-                    </td>
-                    <td className="text-right py-3 text-xs"><ColorPct n={h.w1} /></td>
-                    <td className="text-right py-3 text-xs"><ColorPct n={h.m1} /></td>
-                    <td className="text-right py-3 text-xs"><ColorPct n={h.m6} /></td>
-                    <td className="text-right py-3 text-xs"><ColorPct n={h.y1} /></td>
-                    <td className="text-right py-3 text-xs"><ColorPct n={h.gainLossPercent} /></td>
-                    <td
-                      className="hidden md:table-cell py-3 w-16"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-end gap-3">
-                        <Link
-                          href={`/stocks/${h.ticker}`}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="View chart"
-                        >
-                          <LineChart className="h-3.5 w-3.5" />
-                        </Link>
-                        <button
-                          onClick={() => runAi(h)}
-                          className={`transition-colors ${aiTicker === h.ticker ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                          title="AI breakdown"
-                        >
-                          <Sparkles className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="py-3 w-4 text-muted-foreground">
-                      {expanded === h.ticker
-                        ? <ChevronUp className="h-3.5 w-3.5" />
-                        : <ChevronDown className="h-3.5 w-3.5" />}
-                    </td>
-                  </tr>
-                  {expanded === h.ticker && (
-                    <tr>
-                      <td colSpan={8} className="pb-4 pt-2">
-                        {editing === h.ticker ? (
-                          <EditRow holding={h} onDone={() => setEditing(null)} />
-                        ) : (
-                          <div className="space-y-3 pl-1">
-                            <div className="flex items-baseline gap-3">
-                              <span className="text-xl font-bold">{money(h.price)}</span>
-                              <span className={`text-sm ${h.changePercent >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                <ColorPct n={h.changePercent} /> today
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                              {[
-                                { label: 'Shares', value: String(h.shares) },
-                                { label: 'Avg paid', value: money(h.avgPrice) },
-                                { label: 'Market value', value: money(h.marketValue) },
-                                { label: 'Gain/loss', value: money(h.gainLoss), color: h.gainLoss >= 0 ? 'text-green-600' : 'text-red-500' },
-                              ].map(({ label, value, color }) => (
-                                <div key={label}>
-                                  <p className="text-xs text-muted-foreground">{label}</p>
-                                  <p className={`font-medium ${color ?? ''}`}>{value}</p>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <Link href={`/stocks/${h.ticker}`} className="hover:text-foreground transition-colors">
-                                View chart →
-                              </Link>
-                              <button onClick={() => setEditing(h.ticker)} className="flex items-center gap-1 hover:text-foreground transition-colors">
-                                <Pencil className="h-3 w-3" /> Edit
-                              </button>
-                              <button onClick={() => remove(h.ticker)} disabled={removing} className="flex items-center gap-1 hover:text-destructive transition-colors">
-                                <Trash2 className="h-3 w-3" /> Remove
-                              </button>
-                            </div>
+
+              {expanded === h.ticker && (
+                <tr>
+                  <td colSpan={8} className="pb-6 pt-1" onClick={e => e.stopPropagation()}>
+                    <div className="bg-muted/40 border border-border/60 rounded-2xl p-5">
+                      {editing === h.ticker ? (
+                        <EditRow holding={h} onDone={() => setEditing(null)} />
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="flex items-baseline gap-3">
+                            <span className="text-[22px] font-semibold">{money(h.price)}</span>
+                            <span className={`text-sm font-medium ${h.changePercent >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                              <ColorPct n={h.changePercent} /> today
+                            </span>
                           </div>
-                        )}
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-          {aiTicker && (
-            <div className="hidden md:block absolute left-full top-0 ml-4 w-72 z-10">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span>{aiTicker}</span>
-                    <button
-                      onClick={() => { setAiTicker(null); setAiResult(null) }}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {aiPending || !aiResult ? (
-                    <div className="space-y-2 animate-pulse">
-                      {[85, 100, 75, 90, 65, 80].map(w => (
-                        <div key={w} className="h-2.5 bg-muted rounded" style={{ width: `${w}%` }} />
-                      ))}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {[
+                              { label: 'Shares', value: String(h.shares) },
+                              { label: 'Avg paid', value: money(h.avgPrice) },
+                              { label: 'Market value', value: money(h.marketValue) },
+                              { label: 'Gain/loss', value: money(h.gainLoss), color: h.gainLoss >= 0 ? 'text-green-600' : 'text-red-500' },
+                            ].map(({ label, value, color }) => (
+                              <div key={label}>
+                                <p className="text-[11px] text-muted-foreground mb-0.5">{label}</p>
+                                <p className={`text-[13px] font-medium ${color ?? ''}`}>{value}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <Link href={`/stocks/${h.ticker}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                              <LineChart className="h-3 w-3" /> View chart
+                            </Link>
+                            <button onClick={() => setEditing(h.ticker)} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                              <Pencil className="h-3 w-3" /> Edit
+                            </button>
+                            <button onClick={() => remove(h.ticker)} disabled={removing} className="flex items-center gap-1 hover:text-destructive transition-colors">
+                              <Trash2 className="h-3 w-3" /> Remove
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{aiResult}</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
-      </div>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
