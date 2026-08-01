@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { SendHorizonal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Card } from '@/components/ui/card'
 import ReactMarkdown from 'react-markdown'
 
 type Message = { role: 'user' | 'assistant'; content: string }
@@ -78,21 +77,21 @@ export function StocksChat() {
   }
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden">
-      <div className="px-5 py-3 border-b shrink-0">
+    <div className="flex flex-col h-full">
+      <div className="px-6 py-4 border-b shrink-0">
         <span className="text-sm font-medium text-muted-foreground">Portfolio Advisor</span>
       </div>
 
-      <div className="flex-1 px-4 py-5 space-y-3 overflow-y-auto min-h-0">
+      <div className="flex-1 px-6 py-5 space-y-4 overflow-y-auto min-h-0">
         {messages.length === 0 && !isStreaming && (
-          <p className="text-sm text-muted-foreground text-center pt-8">
+          <p className="text-sm text-muted-foreground text-center pt-12">
             Ask me anything about your portfolio — what to buy, sell, rebalance, or how to think about a position.
           </p>
         )}
 
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[85%] ${
+            <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed max-w-[75%] ${
               msg.role === 'user'
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-foreground prose prose-sm dark:prose-invert'
@@ -104,7 +103,7 @@ export function StocksChat() {
 
         {streamingText && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[85%] prose prose-sm dark:prose-invert">
+            <div className="bg-muted rounded-2xl px-4 py-3 text-sm leading-relaxed max-w-[75%] prose prose-sm dark:prose-invert">
               <ReactMarkdown>{streamingText}</ReactMarkdown>
             </div>
           </div>
@@ -112,7 +111,7 @@ export function StocksChat() {
 
         {isStreaming && !streamingText && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl px-4 py-2.5">
+            <div className="bg-muted rounded-2xl px-4 py-3">
               <span className="inline-flex gap-1 text-muted-foreground">
                 <span className="animate-bounce text-base leading-none">·</span>
                 <span className="animate-bounce text-base leading-none [animation-delay:0.15s]">·</span>
@@ -125,8 +124,8 @@ export function StocksChat() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t p-4 shrink-0">
-        <div className="flex gap-2 items-end">
+      <div className="border-t px-6 py-4 shrink-0">
+        <div className="flex gap-3 items-end">
           <Textarea
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -150,8 +149,8 @@ export function StocksChat() {
             <SendHorizonal className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-1.5">Enter to send · Shift+Enter for new line</p>
+        <p className="text-xs text-muted-foreground mt-2">Enter to send · Shift+Enter for new line</p>
       </div>
-    </Card>
+    </div>
   )
 }

@@ -44,26 +44,29 @@ export default async function StocksPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[calc(100vh-8rem)]">
-      <div className="lg:w-105 shrink-0 flex flex-col gap-4 lg:overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Portfolio</h1>
+    <div className="flex flex-1 min-h-0 overflow-hidden divide-x">
+      {/* Left panel — holdings */}
+      <div className="w-96 shrink-0 flex flex-col">
+        <div className="px-5 py-4 border-b flex items-center justify-between shrink-0">
+          <h1 className="text-base font-semibold">Portfolio</h1>
           <AddHoldingForm />
         </div>
-
-        {holdings.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-8 text-center">
-            No stocks yet — add one above.
-          </p>
-        ) : (
-          <>
-            <AiNewsButton holdings={rows} />
-            <HoldingsList holdings={rows} />
-          </>
-        )}
+        <div className="flex-1 overflow-y-auto min-h-0 px-5 py-4 space-y-4">
+          {holdings.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-12 text-center">
+              No stocks yet — add one above.
+            </p>
+          ) : (
+            <>
+              <AiNewsButton holdings={rows} />
+              <HoldingsList holdings={rows} />
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 min-w-0 min-h-125 lg:min-h-0">
+      {/* Right panel — chat */}
+      <div className="flex-1 min-w-0 flex flex-col">
         <StocksChat />
       </div>
     </div>
