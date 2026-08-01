@@ -2,8 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
-import { validateTicker, getWeeklyChangePct } from '@/lib/stocks'
+import { validateTicker, getWeeklyChangePct, getHistory, type RangeKey, type HistoricalPoint } from '@/lib/stocks'
 import { anthropic } from '@/lib/ai'
+
+export async function getHistoryAction(ticker: string, range: RangeKey): Promise<HistoricalPoint[]> {
+  return getHistory(ticker, range)
+}
 
 export async function addHoldingAction(data: {
   ticker: string
@@ -37,7 +41,6 @@ export async function updateHoldingAction(data: {
     data: { shares: data.shares, avgPrice: data.avgPrice },
   })
   revalidatePath('/stocks')
-  revalidatePath(`/stocks/${data.ticker}`)
   return {}
 }
 

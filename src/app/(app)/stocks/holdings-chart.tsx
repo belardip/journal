@@ -1,10 +1,10 @@
 'use client'
 
 import { Fragment, useState, useTransition } from 'react'
-import { Trash2, Pencil, Check, X, ChevronDown, ChevronUp, LineChart } from 'lucide-react'
-import Link from 'next/link'
+import { Check, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { removeHoldingAction, updateHoldingAction } from '@/app/actions/stocks'
 import { Input } from '@/components/ui/input'
+import { InlineStockChart } from './inline-stock-chart'
 
 export type HoldingRow = {
   ticker: string
@@ -140,38 +140,12 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
                       {editing === h.ticker ? (
                         <EditRow holding={h} onDone={() => setEditing(null)} />
                       ) : (
-                        <div className="space-y-4">
-                          <div className="flex items-baseline gap-3">
-                            <span className="text-[22px] font-semibold">{money(h.price)}</span>
-                            <span className={`text-sm font-medium ${h.changePercent >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                              <ColorPct n={h.changePercent} /> today
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {[
-                              { label: 'Shares', value: String(h.shares) },
-                              { label: 'Avg paid', value: money(h.avgPrice) },
-                              { label: 'Market value', value: money(h.marketValue) },
-                              { label: 'Gain/loss', value: money(h.gainLoss), color: h.gainLoss >= 0 ? 'text-green-600' : 'text-red-500' },
-                            ].map(({ label, value, color }) => (
-                              <div key={label}>
-                                <p className="text-[11px] text-muted-foreground mb-0.5">{label}</p>
-                                <p className={`text-[13px] font-medium ${color ?? ''}`}>{value}</p>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <Link href={`/stocks/${h.ticker}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
-                              <LineChart className="h-3 w-3" /> View chart
-                            </Link>
-                            <button onClick={() => setEditing(h.ticker)} className="flex items-center gap-1 hover:text-foreground transition-colors">
-                              <Pencil className="h-3 w-3" /> Edit
-                            </button>
-                            <button onClick={() => remove(h.ticker)} disabled={removing} className="flex items-center gap-1 hover:text-destructive transition-colors">
-                              <Trash2 className="h-3 w-3" /> Remove
-                            </button>
-                          </div>
-                        </div>
+                        <InlineStockChart
+                          h={h}
+                          onEdit={() => setEditing(h.ticker)}
+                          onRemove={() => remove(h.ticker)}
+                          removing={removing}
+                        />
                       )}
                     </div>
                   </td>
