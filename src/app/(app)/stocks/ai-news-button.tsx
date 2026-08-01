@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Sparkles } from 'lucide-react'
 import { getPortfolioNewsAction } from '@/app/actions/stocks'
 import type { HoldingRow } from './holdings-chart'
+import ReactMarkdown from 'react-markdown'
 
 export function AiNewsButton({ holdings }: { holdings: HoldingRow[] }) {
   const [result, setResult] = useState<string | null>(null)
@@ -30,7 +31,9 @@ export function AiNewsButton({ holdings }: { holdings: HoldingRow[] }) {
             Dismiss
           </button>
         </div>
-        <p className="text-sm leading-relaxed whitespace-pre-line">{result}</p>
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown>{result}</ReactMarkdown>
+        </div>
       </div>
     )
   }

@@ -5,6 +5,7 @@ import { getQuotes, getStockPerformance } from '@/lib/stocks'
 import { HoldingsList, type HoldingRow } from './holdings-chart'
 import { AddHoldingForm } from './add-holding-form'
 import { AiNewsButton } from './ai-news-button'
+import { StocksChat } from './stocks-chat'
 
 export default async function StocksPage() {
   const holdings = await db.stockHolding.findMany({ orderBy: { addedAt: 'asc' } })
@@ -43,22 +44,28 @@ export default async function StocksPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Portfolio</h1>
-        <AddHoldingForm />
+    <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[calc(100vh-8rem)]">
+      <div className="lg:w-105 shrink-0 flex flex-col gap-4 lg:overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold">Portfolio</h1>
+          <AddHoldingForm />
+        </div>
+
+        {holdings.length === 0 ? (
+          <p className="text-muted-foreground text-sm py-8 text-center">
+            No stocks yet — add one above.
+          </p>
+        ) : (
+          <>
+            <AiNewsButton holdings={rows} />
+            <HoldingsList holdings={rows} />
+          </>
+        )}
       </div>
 
-      {holdings.length === 0 ? (
-        <p className="text-muted-foreground text-sm py-8 text-center">
-          No stocks yet — add one above.
-        </p>
-      ) : (
-        <>
-          <AiNewsButton holdings={rows} />
-          <HoldingsList holdings={rows} />
-        </>
-      )}
+      <div className="flex-1 min-w-0 min-h-125 lg:min-h-0">
+        <StocksChat />
+      </div>
     </div>
   )
 }
