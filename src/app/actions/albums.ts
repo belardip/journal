@@ -9,6 +9,7 @@ import { getSimilarArtists, getTopAlbums } from '@/lib/lastfm'
 import { parseJson } from '@/lib/albums'
 
 const OPUS = 'claude-opus-4-7'
+const HAIKU = 'claude-haiku-4-5-20251001'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -205,8 +206,27 @@ export async function generateRecommendationsAction(prompt: string) {
     .slice(0, 15)
     .join(', ')
 
+  // If the request names a specific artist, get Last.fm similar-artist data for them
+  // directly — this is the primary signal for "like X" requests.
+  let requestAnchorArtist: string | null = null
+  let requestAnchorPool = ''
+  if (request !== "Surprise me — pick whatever you think I'd love most right now.") {
+    const extraction = await callClaudeJson<{ artist: string | null }>(
+      `Extract the primary artist name from this music request. Return null if no specific artist is named.\n\nRequest: "${request}"\n\nReturn ONLY valid JSON, no markdown: {"artist": "Artist Name"} or {"artist": null}`,
+      { model: HAIKU, maxTokens: 64 }
+    ).catch(() => ({ artist: null }))
+    if (extraction.artist) {
+      requestAnchorArtist = extraction.artist
+      const anchorSimilar = await getSimilarArtists(extraction.artist, 15)
+      requestAnchorPool = anchorSimilar
+        .filter(a => !historyArtistsArr.some(h => h.toLowerCase() === a.toLowerCase()))
+        .slice(0, 15)
+        .join(', ')
+    }
+  }
+
   // Pass 1: pick artists
-  const p1 = `You are an expert music curator. Based on this listener's taste profile and current request, choose 5 artists whose work they would love.\n\n## Listener's Taste Profile\n${pSection}\n\n${historyArtists ? `## Already listened to (do not suggest these artists again)\n${historyArtists}\n\n` : ''}${recentArtists ? `## Recently recommended (avoid repeating these artists)\n${recentArtists}\n\n` : ''}${similarPool ? `## Real artists similar to ones they already like (optional inspiration, not required)\n${similarPool}\n\n` : ''}## Their Request\n"${request}"\n\nRules:\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), treat it as a strict requirement, not a vibe — every pick must actually satisfy it\n- 5 different artists, no duplicates\n- Vary the suggestions — don't cluster around one sub-genre\n- The reason should be 2-3 sentences specific to this listener's taste\n- If you swap an artist for a related one (e.g. because the first is already listened to), the "artist" field must be the swapped-to artist, not the original\n\nReturn ONLY a JSON array of 5 objects, no markdown:\n[{"artist": "Artist Name", "reason": "Why this fits..."}]`
+  const p1 = `You are an expert music curator. Based on this listener's taste profile and current request, choose 5 artists whose work they would love.\n\n## Listener's Taste Profile\n${pSection}\n\n${historyArtists ? `## Already listened to (do not suggest these artists again)\n${historyArtists}\n\n` : ''}${recentArtists ? `## Recently recommended (avoid repeating these artists)\n${recentArtists}\n\n` : ''}${requestAnchorPool ? `## Artists similar to ${requestAnchorArtist} (the artist they specifically mentioned — Last.fm real data, start here)\n${requestAnchorPool}\n\n` : similarPool ? `## Real artists similar to ones they already like (optional inspiration)\n${similarPool}\n\n` : ''}## Their Request\n"${request}"\n\nRules:\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), treat it as a strict requirement, not a vibe — every pick must actually satisfy it\n- 5 different artists, no duplicates\n- Vary the suggestions — don't cluster around one sub-genre\n- The reason should be 2-3 sentences specific to this listener's taste\n- If you swap an artist for a related one (e.g. because the first is already listened to), the "artist" field must be the swapped-to artist, not the original\n\nReturn ONLY a JSON array of 5 objects, no markdown:\n[{"artist": "Artist Name", "reason": "Why this fits..."}]`
 
   const artistPicks = await callClaudeJson<{ artist: string; reason: string }[]>(p1, { model: OPUS })
 
@@ -217,7 +237,7 @@ export async function generateRecommendationsAction(prompt: string) {
       batchId: batch.id,
       level: 'info',
       event: 'pass1_artists',
-      detail: JSON.stringify({ prompt: prompt || '(none)', count: artistPicks.length, artists: artistPicks, similarPoolUsed: similarPool || '(none)' }),
+      detail: JSON.stringify({ prompt: prompt || '(none)', count: artistPicks.length, artists: artistPicks, anchorArtist: requestAnchorArtist, anchorPoolUsed: requestAnchorPool || '(none)', similarPoolUsed: similarPool || '(none)' }),
     },
   })
 
