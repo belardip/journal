@@ -31,7 +31,7 @@ export function AiNewsButton({ holdings }: { holdings: HoldingRow[] }) {
             Dismiss
           </button>
         </div>
-        <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1.5 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
           <ReactMarkdown>{result}</ReactMarkdown>
         </div>
       </div>

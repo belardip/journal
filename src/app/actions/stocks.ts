@@ -97,7 +97,7 @@ export async function getPortfolioNewsAction(
     tools: [{ type: 'web_search_20250305' as 'web_search_20250305', name: 'web_search' }],
     messages: [{
       role: 'user',
-      content: `These stocks in my portfolio moved significantly this week:\n${lines}\n\nSearch for recent news and write a short plain-English summary (3-5 sentences) on what drove the moves. Be direct and specific. No jargon without explanation.`,
+      content: `These stocks in my portfolio moved significantly this week:\n${lines}\n\nSearch for recent news and write a short plain-English summary (3-5 sentences) on what drove the moves. Be direct and specific. No jargon without explanation. Write as flowing prose — do not insert blank lines or line breaks within a sentence or paragraph.`,
     }],
   })
 
