@@ -102,9 +102,9 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
           <div key={h.ticker}>
             <div
               onClick={() => toggle(h.ticker)}
-              className="flex items-center gap-3 py-4 cursor-pointer"
+              className="flex items-start gap-3 py-4 cursor-pointer"
             >
-              {/* Left: name + meta */}
+              {/* Left: name + meta + perf */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2 overflow-hidden">
                   <span className="font-mono font-semibold text-sm shrink-0">{h.ticker}</span>
@@ -112,6 +112,14 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   {h.shares} shares · avg {money(h.avgPrice)}
+                </div>
+                <div className="flex items-center gap-2.5 mt-1.5 text-[11px]">
+                  {([['1W', h.w1], ['1M', h.m1], ['6M', h.m6], ['1Y', h.y1]] as [string, number][]).map(([label, val]) => (
+                    <span key={label} className="flex items-center gap-0.5">
+                      <span className="text-muted-foreground/60">{label}</span>
+                      <ColorPct n={val} />
+                    </span>
+                  ))}
                 </div>
               </div>
 
@@ -125,7 +133,7 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
                 </div>
               </div>
 
-              <div className="text-muted-foreground shrink-0">
+              <div className="text-muted-foreground shrink-0 mt-0.5">
                 {expanded === h.ticker
                   ? <ChevronUp className="h-3.5 w-3.5 opacity-40" />
                   : <ChevronDown className="h-3.5 w-3.5 opacity-40" />}
