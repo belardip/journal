@@ -58,7 +58,7 @@ export default async function StocksPage() {
       <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
 
         {/* Header */}
-        <div className="px-8 pt-10 pb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="px-4 sm:px-8 pt-8 sm:pt-10 pb-6 flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Portfolio</h1>
             {holdings.length > 0 && (
@@ -74,7 +74,7 @@ export default async function StocksPage() {
 
         {/* Stats bar */}
         {rows.length > 0 && (
-          <div className="px-8 pb-6 flex items-center gap-7 flex-wrap">
+          <div className="px-4 sm:px-8 pb-6 flex items-center gap-7 flex-wrap">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Portfolio value</p>
               <p className="text-[19px] font-semibold tracking-tight">{money(totalValue)}</p>
@@ -95,7 +95,7 @@ export default async function StocksPage() {
         )}
 
         {/* What's moving + Holdings table */}
-        <div className="px-8 pb-12 space-y-4">
+        <div className="px-4 sm:px-8 pb-12 space-y-4">
           {holdings.length === 0 ? (
             <p className="text-muted-foreground text-sm py-12 text-center">
               No stocks yet — add one above.
