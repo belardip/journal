@@ -102,41 +102,42 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
           <div key={h.ticker}>
             <div
               onClick={() => toggle(h.ticker)}
-              className="flex items-start gap-3 py-4 cursor-pointer"
+              className="flex flex-col py-4 cursor-pointer"
             >
-              {/* Left: name + meta + perf */}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2 overflow-hidden">
-                  <span className="font-mono font-semibold text-sm shrink-0">{h.ticker}</span>
-                  <span className="text-[13px] text-muted-foreground truncate">{h.name}</span>
+              {/* Main row: name + price + chevron */}
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2 overflow-hidden">
+                    <span className="font-mono font-semibold text-sm shrink-0">{h.ticker}</span>
+                    <span className="text-[13px] text-muted-foreground truncate">{h.name}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {h.shares} shares · avg {money(h.avgPrice)}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {h.shares} shares · avg {money(h.avgPrice)}
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-medium tabular-nums">{money(h.price)}</div>
+                  <div className="flex items-center justify-end gap-1.5 mt-0.5 text-xs">
+                    <ColorPct n={h.changePercent} />
+                    <span className="text-muted-foreground/50">·</span>
+                    <ColorPct n={h.gainLossPercent} />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2.5 mt-1.5 text-[11px]">
-                  {([['1W', h.w1], ['1M', h.m1], ['6M', h.m6], ['1Y', h.y1]] as [string, number][]).map(([label, val]) => (
-                    <span key={label} className="flex items-center gap-0.5">
-                      <span className="text-muted-foreground/60">{label}</span>
-                      <ColorPct n={val} />
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right: price + change + gain */}
-              <div className="text-right shrink-0">
-                <div className="text-sm font-medium tabular-nums">{money(h.price)}</div>
-                <div className="flex items-center justify-end gap-1.5 mt-0.5 text-xs">
-                  <ColorPct n={h.changePercent} />
-                  <span className="text-muted-foreground/50">·</span>
-                  <ColorPct n={h.gainLossPercent} />
+                <div className="text-muted-foreground shrink-0">
+                  {expanded === h.ticker
+                    ? <ChevronUp className="h-3.5 w-3.5 opacity-40" />
+                    : <ChevronDown className="h-3.5 w-3.5 opacity-40" />}
                 </div>
               </div>
 
-              <div className="text-muted-foreground shrink-0 mt-0.5">
-                {expanded === h.ticker
-                  ? <ChevronUp className="h-3.5 w-3.5 opacity-40" />
-                  : <ChevronDown className="h-3.5 w-3.5 opacity-40" />}
+              {/* Full-width perf row */}
+              <div className="flex items-center justify-between mt-2 text-[13px]">
+                {([['1W', h.w1], ['1M', h.m1], ['6M', h.m6], ['1Y', h.y1]] as [string, number][]).map(([label, val]) => (
+                  <span key={label} className="flex items-center gap-1">
+                    <span className="text-muted-foreground/60">{label}</span>
+                    <ColorPct n={val} />
+                  </span>
+                ))}
               </div>
             </div>
 
