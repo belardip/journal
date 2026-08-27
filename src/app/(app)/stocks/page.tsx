@@ -3,7 +3,7 @@ export const metadata = { title: 'Portfolio' }
 import { db } from '@/lib/db'
 import { getQuotes, getStockPerformance } from '@/lib/stocks'
 import { HoldingsList, type HoldingRow } from './holdings-chart'
-import { AddHoldingForm } from './add-holding-form'
+import { ManagePortfolioDialog } from './manage-portfolio-dialog'
 import { AiNewsButton } from './ai-news-button'
 import { StocksChat } from './stocks-chat'
 
@@ -68,7 +68,7 @@ export default async function StocksPage() {
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-            <AddHoldingForm />
+            <ManagePortfolioDialog holdings={rows} />
           </div>
         </div>
 

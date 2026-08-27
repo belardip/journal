@@ -1,32 +1,21 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { SendHorizonal, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
+import { SendHorizonal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import ReactMarkdown from 'react-markdown'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
 export function StocksChat() {
   const [isOpen, setIsOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(true)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingText, setStreamingText] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const check = () => {
-      const mobile = window.innerWidth < 768
-      setIsMobile(mobile)
-      if (!mobile) setIsOpen(true)
-    }
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -133,8 +122,8 @@ export function StocksChat() {
     </div>
   )
 
-  const chatInput = (extraClass = '') => (
-    <div className={`border-t px-5 py-4 shrink-0 ${extraClass}`}>
+  const chatInput = (
+    <div className="border-t px-5 py-4 shrink-0">
       <div className="flex gap-2 items-end">
         <Textarea
           value={input}
@@ -163,66 +152,27 @@ export function StocksChat() {
     </div>
   )
 
-  // Mobile: full-screen overlay when open, floating button when closed
-  if (isMobile) {
-    if (!isOpen) {
-      return (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 right-4 z-50 bg-primary text-primary-foreground rounded-full px-4 py-2 text-[13px] font-semibold shadow-lg"
-        >
-          Advisor
-        </button>
-      )
-    }
-    return (
-      <div className="fixed inset-x-0 top-0 h-dvh z-50 flex flex-col bg-background">
-        <div className="px-5 py-4 border-b flex items-center justify-between shrink-0">
-          <span className="text-[13px] font-semibold">Portfolio Advisor</span>
-          <button
-            onClick={() => setIsOpen(false)}
-            title="Close"
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        {chatMessages}
-        {chatInput()}
-      </div>
-    )
-  }
-
-  // Desktop: collapsed side strip when closed
-  if (!isOpen) {
-    return (
-      <div className="w-13 shrink-0 border-l flex flex-col items-center pt-5 bg-muted/20">
-        <button
-          onClick={() => setIsOpen(true)}
-          title="Open Portfolio Advisor"
-          className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <PanelRightOpen className="h-4.25 w-4.25" />
-        </button>
-      </div>
-    )
-  }
-
-  // Desktop: side panel
   return (
-    <div className="w-80 shrink-0 border-l flex flex-col bg-muted/10">
-      <div className="px-5 py-4 border-b flex items-center justify-between shrink-0">
-        <span className="text-[13px] font-semibold">Portfolio Advisor</span>
-        <button
-          onClick={() => setIsOpen(false)}
-          title="Collapse"
-          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-20 md:bottom-4 right-4 z-40 bg-primary text-primary-foreground rounded-full px-4 py-2 text-[13px] font-semibold shadow-lg"
+      >
+        Advisor
+      </button>
+
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetContent
+          side="right"
+          className="p-0 gap-0 flex flex-col data-[side=right]:w-full data-[side=right]:sm:w-1/2 data-[side=right]:sm:max-w-none"
         >
-          <PanelRightClose className="h-4 w-4" />
-        </button>
-      </div>
-      {chatMessages}
-      {chatInput()}
-    </div>
+          <SheetHeader className="px-5 py-4 border-b shrink-0">
+            <SheetTitle>Portfolio Advisor</SheetTitle>
+          </SheetHeader>
+          {chatMessages}
+          {chatInput}
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }
