@@ -38,8 +38,8 @@ function EditableRow({ holding }: { holding: HoldingRow }) {
   }
 
   return (
-    <div className="flex items-center gap-2 py-2.5 border-b border-border/60 last:border-0">
-      <div className="w-24 shrink-0 overflow-hidden">
+    <div className="flex flex-wrap items-center gap-2 py-2.5 border-b border-border/60 last:border-0">
+      <div className="w-full sm:w-24 sm:shrink-0 overflow-hidden">
         <div className="font-mono font-semibold text-sm">{holding.ticker}</div>
         <div className="text-[11px] text-muted-foreground truncate">{holding.name}</div>
       </div>
@@ -68,7 +68,7 @@ function EditableRow({ holding }: { holding: HoldingRow }) {
         onClick={remove}
         disabled={removing}
         title="Remove holding"
-        className="text-muted-foreground hover:text-destructive transition-colors shrink-0 disabled:opacity-40"
+        className="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
       >
         <Trash2 className="h-4 w-4" />
       </button>

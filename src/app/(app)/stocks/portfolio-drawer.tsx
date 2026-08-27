@@ -1,21 +1,29 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { SendHorizonal } from 'lucide-react'
+import { useState, useEffect, useRef, useTransition } from 'react'
+import { SendHorizonal, Sparkles, MessagesSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import ReactMarkdown from 'react-markdown'
+import { getPortfolioNewsAction } from '@/app/actions/stocks'
+import type { HoldingRow } from './holdings-chart'
 
 type Message = { role: 'user' | 'assistant'; content: string }
+type Tab = 'chat' | 'news'
 
-export function StocksChat() {
+export function PortfolioDrawer({ holdings }: { holdings: HoldingRow[] }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [tab, setTab] = useState<Tab>('chat')
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingText, setStreamingText] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  const [newsResult, setNewsResult] = useState<string | null>(null)
+  const [newsPending, startNewsTransition] = useTransition()
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -76,6 +84,26 @@ export function StocksChat() {
       setIsStreaming(false)
       setStreamingText('')
     }
+  }
+
+  function loadNews() {
+    startNewsTransition(async () => {
+      const text = await getPortfolioNewsAction(
+        holdings.map(h => ({ ticker: h.ticker, name: h.name, price: h.price }))
+      )
+      setNewsResult(text)
+    })
+  }
+
+  function openChat() {
+    setTab('chat')
+    setIsOpen(true)
+  }
+
+  function openNews() {
+    setTab('news')
+    setIsOpen(true)
+    if (!newsResult && !newsPending) loadNews()
   }
 
   const chatMessages = (
@@ -152,14 +180,47 @@ export function StocksChat() {
     </div>
   )
 
+  const newsPanel = (
+    <div className="flex-1 px-5 py-5 overflow-y-auto min-h-0">
+      {newsPending ? (
+        <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+          <span className="inline-flex gap-1">
+            <span className="animate-bounce text-base leading-none">·</span>
+            <span className="animate-bounce text-base leading-none [animation-delay:0.15s]">·</span>
+            <span className="animate-bounce text-base leading-none [animation-delay:0.3s]">·</span>
+          </span>
+          Looking up news…
+        </div>
+      ) : newsResult ? (
+        <>
+          <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1.5 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
+            <ReactMarkdown>{newsResult}</ReactMarkdown>
+          </div>
+          <button
+            onClick={() => { setNewsResult(null); loadNews() }}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-4"
+          >
+            Refresh
+          </button>
+        </>
+      ) : (
+        <p className="text-[13px] text-muted-foreground leading-relaxed pt-3">
+          No news to show.
+        </p>
+      )}
+    </div>
+  )
+
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 md:bottom-4 right-4 z-40 bg-primary text-primary-foreground rounded-full px-4 py-2 text-[13px] font-semibold shadow-lg"
-      >
+      <Button variant="outline" size="sm" onClick={openNews} disabled={holdings.length === 0}>
+        <Sparkles className="h-3.5 w-3.5" />
+        What&apos;s moving
+      </Button>
+      <Button variant="outline" size="sm" onClick={openChat}>
+        <MessagesSquare className="h-3.5 w-3.5" />
         Advisor
-      </button>
+      </Button>
 
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
@@ -167,10 +228,16 @@ export function StocksChat() {
           className="p-0 gap-0 flex flex-col data-[side=right]:w-full data-[side=right]:sm:w-1/2 data-[side=right]:sm:max-w-none"
         >
           <SheetHeader className="px-5 py-4 border-b shrink-0">
-            <SheetTitle>Portfolio Advisor</SheetTitle>
+            <SheetTitle>{tab === 'chat' ? 'Portfolio Advisor' : "What's Moving"}</SheetTitle>
           </SheetHeader>
-          {chatMessages}
-          {chatInput}
+          {tab === 'chat' ? (
+            <>
+              {chatMessages}
+              {chatInput}
+            </>
+          ) : (
+            newsPanel
+          )}
         </SheetContent>
       </Sheet>
     </>

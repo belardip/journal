@@ -117,9 +117,8 @@ export function HoldingsList({ holdings }: { holdings: HoldingRow[] }) {
                 </div>
                 <div className="text-right shrink-0">
                   <div className="text-sm font-medium tabular-nums">{money(h.price)}</div>
-                  <div className="flex items-center justify-end gap-1.5 mt-0.5 text-xs">
-                    <ColorPct n={h.changePercent} />
-                    <span className="text-muted-foreground/50">·</span>
+                  <div className="flex items-center justify-end gap-1 mt-0.5 text-xs">
+                    <span className="text-muted-foreground/60">Overall</span>
                     <ColorPct n={h.gainLossPercent} />
                   </div>
                 </div>
