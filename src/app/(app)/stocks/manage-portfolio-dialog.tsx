@@ -39,7 +39,7 @@ function EditableRow({ holding }: { holding: HoldingRow }) {
 
   return (
     <div className="flex items-center gap-2 py-2.5 border-b border-border/60 last:border-0">
-      <div className="w-20 shrink-0 overflow-hidden">
+      <div className="w-24 shrink-0 overflow-hidden">
         <div className="font-mono font-semibold text-sm">{holding.ticker}</div>
         <div className="text-[11px] text-muted-foreground truncate">{holding.name}</div>
       </div>
@@ -49,7 +49,7 @@ function EditableRow({ holding }: { holding: HoldingRow }) {
         onChange={e => setShares(e.target.value)}
         onBlur={() => save({ shares })}
         disabled={saving || removing}
-        className="h-8 w-16 text-sm"
+        className="h-8 w-32 text-sm tabular-nums"
         aria-label="Shares"
       />
       <Input
@@ -58,7 +58,7 @@ function EditableRow({ holding }: { holding: HoldingRow }) {
         onChange={e => setAvgPrice(e.target.value)}
         onBlur={() => save({ avgPrice })}
         disabled={saving || removing}
-        className="h-8 w-20 text-sm"
+        className="h-8 w-28 text-sm tabular-nums"
         aria-label="Avg price"
       />
       <span className="flex-1 text-right text-sm tabular-nums text-muted-foreground">
@@ -110,7 +110,7 @@ function AddRow() {
           onChange={e => setTicker(e.target.value.toUpperCase())}
           onKeyDown={e => { if (e.key === 'Enter') add() }}
           placeholder="Ticker"
-          className="h-8 w-20 text-sm uppercase"
+          className="h-8 w-24 text-sm uppercase"
         />
         <Input
           type="number"
@@ -118,7 +118,7 @@ function AddRow() {
           onChange={e => setShares(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') add() }}
           placeholder="Shares"
-          className="h-8 w-16 text-sm"
+          className="h-8 w-32 text-sm"
         />
         <Input
           type="number"
@@ -126,7 +126,7 @@ function AddRow() {
           onChange={e => setAvgPrice(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') add() }}
           placeholder="Avg price"
-          className="h-8 w-20 text-sm"
+          className="h-8 w-28 text-sm"
         />
         <Button size="sm" onClick={add} disabled={pending || !ticker.trim()} className="h-8">
           <Plus className="h-3.5 w-3.5" />
@@ -149,7 +149,7 @@ export function ManagePortfolioDialog({ holdings }: { holdings: HoldingRow[] }) 
           Manage portfolio
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Manage Portfolio</DialogTitle>
         </DialogHeader>

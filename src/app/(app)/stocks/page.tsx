@@ -12,7 +12,7 @@ function money(n: number) {
 }
 
 export default async function StocksPage() {
-  const holdings = await db.stockHolding.findMany({ orderBy: { addedAt: 'asc' } })
+  const holdings = await db.stockHolding.findMany({ orderBy: { ticker: 'asc' } })
 
   let rows: HoldingRow[] = []
   if (holdings.length > 0) {
