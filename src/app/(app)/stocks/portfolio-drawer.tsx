@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import ReactMarkdown from 'react-markdown'
-import { getPortfolioNewsAction, updatePortfolioNoteAction } from '@/app/actions/stocks'
+import { getPortfolioNewsAction, addPortfolioNoteAction, overwritePortfolioNoteAction } from '@/app/actions/stocks'
 import type { HoldingRow } from './holdings-chart'
 
 type Message = { role: 'user' | 'assistant'; content: string }
@@ -15,68 +15,103 @@ type Note = { summary: string; lastUpdatedAt: Date | null } | null
 
 function MemoryNote({ note }: { note: Note }) {
   const [summary, setSummary] = useState(note?.summary ?? '')
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState(summary)
-  const [pending, startTransition] = useTransition()
 
-  function save() {
-    const trimmed = value.trim()
-    startTransition(async () => {
-      await updatePortfolioNoteAction(trimmed)
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState(summary)
+  const [savingEdit, startEditTransition] = useTransition()
+
+  const [addingNote, setAddingNote] = useState(false)
+  const [noteInput, setNoteInput] = useState('')
+  const [addingPending, startAddTransition] = useTransition()
+
+  function saveEdit() {
+    const trimmed = editValue.trim()
+    startEditTransition(async () => {
+      await overwritePortfolioNoteAction(trimmed)
       setSummary(trimmed)
       setEditing(false)
     })
   }
 
-  if (!summary && !editing) {
-    return (
-      <div className="px-5 pt-4 shrink-0">
-        <button
-          onClick={() => { setValue(''); setEditing(true) }}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          + Add advisor notes
-        </button>
-      </div>
-    )
+  function submitNote() {
+    const text = noteInput.trim()
+    if (!text) return
+    startAddTransition(async () => {
+      const result = await addPortfolioNoteAction(text)
+      setSummary(result.summary)
+      setNoteInput('')
+      setAddingNote(false)
+    })
   }
 
   return (
-    <div className="px-5 pt-4 shrink-0">
-      <div className="rounded-lg border bg-muted/40 p-3">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Advisor memory</span>
-          {!editing && (
+    <div className="px-5 pt-4 shrink-0 space-y-2">
+      {summary && !editing && (
+        <div className="rounded-lg border bg-muted/40 p-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Advisor memory</span>
             <button
-              onClick={() => { setValue(summary); setEditing(true) }}
+              onClick={() => { setEditValue(summary); setEditing(true) }}
+              title="Directly rewrite the memory text (no merging)"
               className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Edit
             </button>
-          )}
+          </div>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">{summary}</p>
         </div>
-        {editing ? (
+      )}
+
+      {editing && (
+        <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Rewrite memory directly</span>
+          <Textarea
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            rows={5}
+            className="text-[13px] resize-none"
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <Button size="sm" className="h-7" onClick={saveEdit} disabled={savingEdit}>
+              {savingEdit ? 'Saving...' : 'Save'}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7" onClick={() => setEditing(false)} disabled={savingEdit}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!editing && (
+        addingNote ? (
           <div className="space-y-2">
             <Textarea
-              value={value}
-              onChange={e => setValue(e.target.value)}
-              rows={5}
+              value={noteInput}
+              onChange={e => setNoteInput(e.target.value)}
+              rows={2}
+              placeholder="e.g. SDLP and ENW are moonshots I'm holding long term"
               className="text-[13px] resize-none"
               autoFocus
             />
             <div className="flex gap-2">
-              <Button size="sm" className="h-7" onClick={save} disabled={pending}>
-                {pending ? 'Saving...' : 'Save'}
+              <Button size="sm" className="h-7" onClick={submitNote} disabled={addingPending || !noteInput.trim()}>
+                {addingPending ? 'Adding...' : 'Add'}
               </Button>
-              <Button size="sm" variant="ghost" className="h-7" onClick={() => setEditing(false)} disabled={pending}>
+              <Button size="sm" variant="ghost" className="h-7" onClick={() => { setAddingNote(false); setNoteInput('') }} disabled={addingPending}>
                 Cancel
               </Button>
             </div>
           </div>
         ) : (
-          <p className="text-[13px] text-muted-foreground leading-relaxed">{summary}</p>
-        )}
-      </div>
+          <button
+            onClick={() => setAddingNote(true)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            + Add a note
+          </button>
+        )
+      )}
     </div>
   )
 }

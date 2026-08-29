@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { validateTicker, getWeeklyChangePct, getHistory, type RangeKey, type HistoricalPoint } from '@/lib/stocks'
 import { anthropic } from '@/lib/ai'
+import { addNoteToPortfolioSummary } from '@/lib/portfolioNote'
 
 export async function getHistoryAction(ticker: string, range: RangeKey): Promise<HistoricalPoint[]> {
   return getHistory(ticker, range)
@@ -49,7 +50,15 @@ export async function removeHoldingAction(ticker: string): Promise<void> {
   revalidatePath('/stocks')
 }
 
-export async function updatePortfolioNoteAction(summary: string): Promise<void> {
+// Merges the note into the existing summary via Claude — for adding context ("SDLP is a moonshot I'm holding long term").
+export async function addPortfolioNoteAction(noteText: string): Promise<{ summary: string }> {
+  const summary = await addNoteToPortfolioSummary(noteText)
+  revalidatePath('/stocks')
+  return { summary }
+}
+
+// Overwrites the summary verbatim — for directly correcting something the AI got wrong.
+export async function overwritePortfolioNoteAction(summary: string): Promise<void> {
   const note = await db.portfolioNote.findFirst()
   if (note) {
     await db.portfolioNote.update({ where: { id: note.id }, data: { summary, lastUpdatedAt: new Date() } })
