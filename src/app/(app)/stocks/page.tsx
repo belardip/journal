@@ -8,6 +8,7 @@ import { PortfolioDrawer } from './portfolio-drawer'
 
 export default async function StocksPage() {
   const holdings = await db.stockHolding.findMany({ orderBy: { ticker: 'asc' } })
+  const note = await db.portfolioNote.findFirst()
 
   let rows: HoldingRow[] = []
   if (holdings.length > 0) {
@@ -59,7 +60,7 @@ export default async function StocksPage() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             <ManagePortfolioDialog holdings={rows} />
-            <PortfolioDrawer holdings={rows} />
+            <PortfolioDrawer holdings={rows} note={note} />
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getQuotes } from '@/lib/stocks'
 import { cookies } from 'next/headers'
 import { getSessionToken } from '@/lib/session'
+import { updatePortfolioNoteFromChat } from '@/lib/portfolioNote'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -56,9 +57,12 @@ Total value: $${totalValue.toFixed(2)}
 Total gain/loss: ${totalGainLoss >= 0 ? '+' : ''}$${totalGainLoss.toFixed(2)} (${totalGainLossPct >= 0 ? '+' : ''}${totalGainLossPct.toFixed(1)}%)`
   }
 
+  const note = await db.portfolioNote.findFirst()
+  const noteContext = note?.summary ? `\n\n## What We've Discussed Before\n${note.summary}` : ''
+
   const systemPrompt = `You are a knowledgeable financial advisor helping the user think through their investment portfolio. Be concise, honest, and helpful. Skip legal disclaimers — just give clear analysis.
 
-${portfolioContext}`
+${portfolioContext}${noteContext}`
 
   const allMessages: Message[] = [...messages, { role: 'user', content: message }]
 
@@ -66,6 +70,7 @@ ${portfolioContext}`
 
   const stream = new ReadableStream({
     async start(controller) {
+      let fullText = ''
       try {
         const response = anthropic.messages.stream({
           model: 'claude-sonnet-4-6',
@@ -76,6 +81,7 @@ ${portfolioContext}`
 
         for await (const event of response) {
           if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+            fullText += event.delta.text
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ chunk: event.delta.text })}\n\n`))
           }
         }
@@ -86,6 +92,10 @@ ${portfolioContext}`
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: true })}\n\n`))
       } finally {
         controller.close()
+        if (fullText) {
+          updatePortfolioNoteFromChat([...allMessages, { role: 'assistant', content: fullText }])
+            .catch(e => console.error('[portfolio-note] background update failed:', e))
+        }
       }
     },
   })

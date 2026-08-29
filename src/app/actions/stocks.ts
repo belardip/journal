@@ -49,6 +49,16 @@ export async function removeHoldingAction(ticker: string): Promise<void> {
   revalidatePath('/stocks')
 }
 
+export async function updatePortfolioNoteAction(summary: string): Promise<void> {
+  const note = await db.portfolioNote.findFirst()
+  if (note) {
+    await db.portfolioNote.update({ where: { id: note.id }, data: { summary, lastUpdatedAt: new Date() } })
+  } else {
+    await db.portfolioNote.create({ data: { summary, lastUpdatedAt: new Date() } })
+  }
+  revalidatePath('/stocks')
+}
+
 export async function getTickerBreakdownAction({
   ticker, name, changePercent, range,
 }: {

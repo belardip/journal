@@ -109,6 +109,14 @@ model StockHolding {
   @@map("stock_holdings")
 }
 
+model PortfolioNote {
+  id            Int       @id @default(autoincrement())
+  summary       String    @default("")
+  lastUpdatedAt DateTime?
+
+  @@map("portfolio_notes")
+}
+
 model Movie {
   id                Int                       @id @default(autoincrement())
   batchId           Int?

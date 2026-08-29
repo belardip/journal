@@ -6,13 +6,82 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import ReactMarkdown from 'react-markdown'
-import { getPortfolioNewsAction } from '@/app/actions/stocks'
+import { getPortfolioNewsAction, updatePortfolioNoteAction } from '@/app/actions/stocks'
 import type { HoldingRow } from './holdings-chart'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 type Tab = 'chat' | 'news'
+type Note = { summary: string; lastUpdatedAt: Date | null } | null
 
-export function PortfolioDrawer({ holdings }: { holdings: HoldingRow[] }) {
+function MemoryNote({ note }: { note: Note }) {
+  const [summary, setSummary] = useState(note?.summary ?? '')
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState(summary)
+  const [pending, startTransition] = useTransition()
+
+  function save() {
+    const trimmed = value.trim()
+    startTransition(async () => {
+      await updatePortfolioNoteAction(trimmed)
+      setSummary(trimmed)
+      setEditing(false)
+    })
+  }
+
+  if (!summary && !editing) {
+    return (
+      <div className="px-5 pt-4 shrink-0">
+        <button
+          onClick={() => { setValue(''); setEditing(true) }}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          + Add advisor notes
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-5 pt-4 shrink-0">
+      <div className="rounded-lg border bg-muted/40 p-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Advisor memory</span>
+          {!editing && (
+            <button
+              onClick={() => { setValue(summary); setEditing(true) }}
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+        {editing ? (
+          <div className="space-y-2">
+            <Textarea
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              rows={5}
+              className="text-[13px] resize-none"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <Button size="sm" className="h-7" onClick={save} disabled={pending}>
+                {pending ? 'Saving...' : 'Save'}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7" onClick={() => setEditing(false)} disabled={pending}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted-foreground leading-relaxed">{summary}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function PortfolioDrawer({ holdings, note }: { holdings: HoldingRow[]; note: Note }) {
   const [isOpen, setIsOpen] = useState(false)
   const [tab, setTab] = useState<Tab>('chat')
 
@@ -232,6 +301,7 @@ export function PortfolioDrawer({ holdings }: { holdings: HoldingRow[] }) {
           </SheetHeader>
           {tab === 'chat' ? (
             <>
+              <MemoryNote note={note} />
               {chatMessages}
               {chatInput}
             </>
