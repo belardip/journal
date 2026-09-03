@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
+  transpilePackages: ['shared-kit'],
   images: {
     remotePatterns: [
       { hostname: '*.mzstatic.com' },
