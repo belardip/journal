@@ -17,6 +17,7 @@ export default function RecommendPage() {
       placeholder={'e.g. "Something like Joni Mitchell but more experimental" or leave blank'}
       moods={moods}
       icon={Disc3}
+      showTasteSlider
       onSubmit={generateRecommendationsAction}
       successHref="/albums"
       cancelHref="/albums"

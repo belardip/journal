@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Slider } from '@/components/ui/slider'
 
 interface Props {
   title: string
@@ -12,9 +13,10 @@ interface Props {
   moods: string[]
   icon: React.ElementType
   loadingLabel?: string
-  onSubmit: (prompt: string) => Promise<void>
+  onSubmit: (prompt: string, tasteWeight: number) => Promise<void>
   successHref: string
   cancelHref: string
+  showTasteSlider?: boolean
 }
 
 export function RecommendationForm({
@@ -27,8 +29,10 @@ export function RecommendationForm({
   onSubmit,
   successHref,
   cancelHref,
+  showTasteSlider = false,
 }: Props) {
   const [prompt, setPrompt] = useState('')
+  const [tasteWeight, setTasteWeight] = useState(100)
   const [isPending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -38,7 +42,7 @@ export function RecommendationForm({
     setError(null)
     start(async () => {
       try {
-        await onSubmit(prompt.trim())
+        await onSubmit(prompt.trim(), tasteWeight)
         router.push(successHref)
       } catch {
         setError('The AI service is busy right now — try again in a moment.')
@@ -81,6 +85,20 @@ export function RecommendationForm({
               </button>
             ))}
           </div>
+
+          {showTasteSlider && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>Use taste profile</span>
+                <span className="text-xs text-muted-foreground">{tasteWeight}%</span>
+              </div>
+              <Slider value={[tasteWeight]} onValueChange={([v]) => setTasteWeight(v)} min={0} max={100} step={10} />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Surprise me</span>
+                <span>Stick to my taste</span>
+              </div>
+            </div>
+          )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 

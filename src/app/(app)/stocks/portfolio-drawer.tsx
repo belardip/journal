@@ -47,8 +47,8 @@ function MemoryNote({ note }: { note: Note }) {
   return (
     <div className="px-5 pt-4 shrink-0 space-y-2">
       {summary && !editing && (
-        <div className="rounded-lg border bg-muted/40 p-3">
-          <div className="flex items-center justify-between mb-1.5">
+        <div className="rounded-lg border bg-muted/40 p-2.5 sm:p-3">
+          <div className="flex items-center justify-between mb-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Advisor memory</span>
             <button
               onClick={() => { setEditValue(summary); setEditing(true) }}
@@ -58,7 +58,7 @@ function MemoryNote({ note }: { note: Note }) {
               Edit
             </button>
           </div>
-          <p className="text-[13px] text-muted-foreground leading-relaxed">{summary}</p>
+          <p className="text-[13px] text-muted-foreground leading-relaxed max-h-20 sm:max-h-32 overflow-y-auto">{summary}</p>
         </div>
       )}
 
@@ -329,7 +329,7 @@ export function PortfolioDrawer({ holdings, note }: { holdings: HoldingRow[]; no
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
           side="right"
-          className="p-0 gap-0 flex flex-col data-[side=right]:w-full data-[side=right]:sm:w-1/2 data-[side=right]:sm:max-w-none"
+          className="p-0 gap-0 flex flex-col overflow-hidden data-[side=right]:w-full data-[side=right]:sm:w-1/2 data-[side=right]:sm:max-w-none"
         >
           <SheetHeader className="px-5 py-4 border-b shrink-0">
             <SheetTitle>{tab === 'chat' ? 'Portfolio Advisor' : "What's Moving"}</SheetTitle>

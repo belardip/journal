@@ -28,8 +28,8 @@ async function getSpotifyToken(): Promise<string | null> {
   }
 }
 
-/** Finds the Spotify web player URL for a specific album, or null if no confident match. */
-export async function getSpotifyAlbumUrl(artist: string, title: string): Promise<string | null> {
+/** Finds the Spotify web player match for a specific album, or null if no confident match. */
+export async function getSpotifyAlbumMatch(artist: string, title: string): Promise<{ url: string; isSingle: boolean } | null> {
   const token = await getSpotifyToken()
   if (!token) return null
 
@@ -41,7 +41,7 @@ export async function getSpotifyAlbumUrl(artist: string, title: string): Promise
     })
     if (!res.ok) return null
     const data = await res.json() as {
-      albums?: { items: { name: string; artists: { name: string }[]; external_urls: { spotify: string } }[] }
+      albums?: { items: { name: string; artists: { name: string }[]; external_urls: { spotify: string }; album_type: string }[] }
     }
     const results = data.albums?.items ?? []
     if (!results.length) return null
@@ -55,7 +55,7 @@ export async function getSpotifyAlbumUrl(artist: string, title: string): Promise
     const best = scored[0]
     if (!best || best.as_ < 0.3 || best.score < 0.55) return null
 
-    return best.r.external_urls.spotify
+    return { url: best.r.external_urls.spotify, isSingle: best.r.album_type === 'single' }
   } catch {
     return null
   }
