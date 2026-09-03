@@ -18,8 +18,10 @@ Google sign-in via `next-auth` v5, modeled on paintnext's setup (`paintnext/src/
 - Login page: `src/app/login/page.tsx` — `signIn('google', { redirectTo: '/journal' })`
 - Logout: `src/app/actions/auth.ts` → `logoutAction()` — `signOut({ redirectTo: '/login' })`, used by `sidebar.tsx` and `mobile-header.tsx`
 - API routes that stream (`api/chat/[id]`, `api/chat/stocks`, `api/todos/chat`) re-check `auth()` directly since `proxy.ts` only gates page navigation-level requests loosely — see those files for the pattern
-- Env vars: `AUTH_SECRET` (unique per environment), `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` (shared "tenderbones" OAuth client — same credentials as `dashboard`'s Google Photos integration; see `.api-keys`), `ALLOWED_EMAIL`
+- Env vars: `AUTH_URL` (prod only — see gotcha below), `AUTH_SECRET` (unique per environment), `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` (shared "tenderbones" OAuth client — same credentials as `dashboard`'s Google Photos integration; see `.api-keys`), `ALLOWED_EMAIL`
 - Dev bypass: `NODE_ENV === 'development'` skips auth entirely (see `auth.config.ts` and the API routes above)
+
+**Gotcha — `AUTH_URL` required in production**: `auth.config.ts` sets `trustHost: true` (needed or every request throws `UntrustedHost` behind nginx). That alone isn't enough — Auth.js's header-based host detection (`x-forwarded-host`/`host`) doesn't reliably resolve the real domain on this Turbopack/`next start` setup even though nginx forwards `Host` correctly; it silently falls back to `localhost:<port>`, breaking every generated OAuth URL. Fix: set `AUTH_URL=https://www.tenderbones.org` explicitly in prod's `.env.local` (not needed in dev — no reverse proxy there). If a future subdomain app copies this auth pattern, set its own `AUTH_URL` too.
 
 ## AI Journal Companion
 - System prompt: `src/lib/chat.ts` → `buildChatSystemPrompt()`
