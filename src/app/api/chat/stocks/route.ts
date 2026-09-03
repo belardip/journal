@@ -1,17 +1,15 @@
 import { anthropic } from '@/lib/ai'
 import { db } from '@/lib/db'
 import { getQuotes } from '@/lib/stocks'
-import { cookies } from 'next/headers'
-import { getSessionToken } from '@/lib/session'
+import { auth } from '@/auth'
 import { updatePortfolioNoteFromChat } from '@/lib/portfolioNote'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
 export async function POST(req: Request) {
   if (process.env.NODE_ENV !== 'development') {
-    const jar = await cookies()
-    const sessionToken = await getSessionToken()
-    if (jar.get('www_auth')?.value !== sessionToken) {
+    const session = await auth()
+    if (!session?.user) {
       return new Response('Unauthorized', { status: 401 })
     }
   }

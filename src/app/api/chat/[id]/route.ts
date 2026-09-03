@@ -1,14 +1,12 @@
 import { anthropic } from '@/lib/ai'
 import { db } from '@/lib/db'
 import { buildChatSystemPrompt, buildChatMessages } from '@/lib/chat'
-import { cookies } from 'next/headers'
-import { getSessionToken } from '@/lib/session'
+import { auth } from '@/auth'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (process.env.NODE_ENV !== 'development') {
-    const jar = await cookies()
-    const sessionToken = await getSessionToken()
-    if (jar.get('www_auth')?.value !== sessionToken) {
+    const session = await auth()
+    if (!session?.user) {
       return new Response('Unauthorized', { status: 401 })
     }
   }

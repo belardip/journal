@@ -1,7 +1,7 @@
 # Journal
 
 **URL**: https://www.tenderbones.org
-**Auth**: Magic link (email)
+**Auth**: Google OAuth (Auth.js/next-auth v5), single allowed account
 **Users**: Personal — belardip@gmail.com only
 
 ## Production
@@ -10,11 +10,16 @@
 - **Deploy**: `bash deploy.sh "message"`
 
 ## Auth
-Magic link flow: `/login` → HMAC-signed token emailed via Resend → `/login/verify?token=...` → sets `www_auth` cookie (30 days).
-- Token TTL: 15 minutes (`TOKEN_TTL_MS` in `src/lib/auth.ts`)
-- Allowed email: `ALLOWED_EMAIL` in `.env.local`
-- Cookie scoped to `www.tenderbones.org` only (no `domain` attribute)
-- Auth guard: `src/proxy.ts` — must be named `proxy`, not `middleware`
+Google sign-in via `next-auth` v5, modeled on paintnext's setup (`paintnext/src/auth.ts`/`auth.config.ts`).
+- `src/auth.config.ts` — edge-safe config (Google provider, `authorized()` route-gate callback), used by `src/proxy.ts`
+- `src/auth.ts` — full config; `signIn` callback only allows `profile.email === process.env.ALLOWED_EMAIL` (no DB — journal is single-user, no `User` model)
+- `src/app/api/auth/[...nextauth]/route.ts` — NextAuth route handler
+- Auth guard: `src/proxy.ts` — must be named `proxy`, not `middleware` (Next.js 16+ convention)
+- Login page: `src/app/login/page.tsx` — `signIn('google', { redirectTo: '/journal' })`
+- Logout: `src/app/actions/auth.ts` → `logoutAction()` — `signOut({ redirectTo: '/login' })`, used by `sidebar.tsx` and `mobile-header.tsx`
+- API routes that stream (`api/chat/[id]`, `api/chat/stocks`, `api/todos/chat`) re-check `auth()` directly since `proxy.ts` only gates page navigation-level requests loosely — see those files for the pattern
+- Env vars: `AUTH_SECRET` (unique per environment), `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` (shared "tenderbones" OAuth client — same credentials as `dashboard`'s Google Photos integration; see `.api-keys`), `ALLOWED_EMAIL`
+- Dev bypass: `NODE_ENV === 'development'` skips auth entirely (see `auth.config.ts` and the API routes above)
 
 ## AI Journal Companion
 - System prompt: `src/lib/chat.ts` → `buildChatSystemPrompt()`
@@ -35,8 +40,9 @@ Check `src/components/` before building new UI:
 ```
 DATABASE_URL=file:/var/www/journal/prod.db
 ANTHROPIC_API_KEY=...
-MAGIC_LINK_SECRET=...
-RESEND_API_KEY=re_...
+AUTH_SECRET=...
+AUTH_GOOGLE_ID=...
+AUTH_GOOGLE_SECRET=...
 ALLOWED_EMAIL=belardip@gmail.com
 NEXT_PUBLIC_BASE_URL=https://www.tenderbones.org
 ```
