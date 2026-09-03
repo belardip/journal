@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
-  transpilePackages: ['shared-kit'],
   experimental: { externalDir: true },
+  turbopack: {
+    root: path.join(__dirname, ".."),
+  },
   images: {
     remotePatterns: [
       { hostname: '*.mzstatic.com' },

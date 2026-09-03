@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "shared-kit/ai": ["../shared-kit/src/ai.ts"]
     }
   },
   "include": [
