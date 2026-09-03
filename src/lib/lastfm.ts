@@ -95,9 +95,12 @@ function extractYear(tags: string[], wikiSummary?: string): number | null {
 
 async function fetchAlbumInfo(artist: string, album: string): Promise<{ tags: string[]; wikiSummary?: string } | null> {
   const data = await lastfmGet({ method: 'album.getInfo', artist, album, autocorrect: '1' })
-  const info = data?.album as { tags?: { tag?: { name?: string }[] }; wiki?: { summary?: string } } | undefined
+  const info = data?.album as { tags?: { tag?: { name?: string }[] | { name?: string } }; wiki?: { summary?: string } } | undefined
   if (!info) return null
-  const tags = (info.tags?.tag ?? []).map(t => t.name).filter((n): n is string => Boolean(n))
+  // Last.fm's JSON serialises a single-item list as a bare object instead of a 1-element array.
+  const rawTags = info.tags?.tag
+  const tagList = Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : []
+  const tags = tagList.map(t => t.name).filter((n): n is string => Boolean(n))
   return { tags, wikiSummary: info.wiki?.summary }
 }
 
