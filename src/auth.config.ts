@@ -3,6 +3,7 @@ import Google from 'next-auth/providers/google'
 
 // Edge-safe config — used by proxy.ts. Full config (signIn restriction) lives in auth.ts.
 export const authConfig = {
+  trustHost: true, // self-hosted behind nginx, not on Vercel — Host header isn't auto-trusted
   providers: [Google],
   pages: {
     signIn: '/login',
