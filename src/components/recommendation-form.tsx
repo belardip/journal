@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 interface Props {
   title: string
@@ -13,10 +14,10 @@ interface Props {
   moods: string[]
   icon: React.ElementType
   loadingLabel?: string
-  onSubmit: (prompt: string, tasteWeight: number) => Promise<void>
+  onSubmit: (prompt: string, useTasteProfile: boolean) => Promise<void>
   successHref: string
   cancelHref: string
-  showTasteSlider?: boolean
+  showTasteToggle?: boolean
 }
 
 export function RecommendationForm({
@@ -29,10 +30,10 @@ export function RecommendationForm({
   onSubmit,
   successHref,
   cancelHref,
-  showTasteSlider = false,
+  showTasteToggle = false,
 }: Props) {
   const [prompt, setPrompt] = useState('')
-  const [tasteWeight, setTasteWeight] = useState(100)
+  const [useTasteProfile, setUseTasteProfile] = useState(true)
   const [isPending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -42,7 +43,7 @@ export function RecommendationForm({
     setError(null)
     start(async () => {
       try {
-        await onSubmit(prompt.trim(), tasteWeight)
+        await onSubmit(prompt.trim(), useTasteProfile)
         router.push(successHref)
       } catch {
         setError('The AI service is busy right now — try again in a moment.')
@@ -86,17 +87,12 @@ export function RecommendationForm({
             ))}
           </div>
 
-          {showTasteSlider && (
-            <div className="space-y-2 pt-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Use taste profile</span>
-                <span className="text-xs text-muted-foreground">{tasteWeight}%</span>
-              </div>
-              <Slider value={[tasteWeight]} onValueChange={([v]) => setTasteWeight(v)} min={0} max={100} step={10} />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Surprise me</span>
-                <span>Stick to my taste</span>
-              </div>
+          {showTasteToggle && (
+            <div className="flex items-center justify-between pt-2">
+              <Label htmlFor="use-taste-profile" className="text-sm font-normal">
+                Use taste profile
+              </Label>
+              <Switch id="use-taste-profile" checked={useTasteProfile} onCheckedChange={setUseTasteProfile} />
             </div>
           )}
 

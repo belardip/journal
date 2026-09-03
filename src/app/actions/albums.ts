@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 import { callClaudeJson } from '@/lib/ai'
 import { enrichAlbumMetadata } from '@/lib/metadata'
 import { getSpotifyAlbumMatch } from '@/lib/spotify'
-import { getSimilarArtists, getTopAlbumsWithYears } from '@/lib/lastfm'
+import { getSimilarArtists, getBlendedSimilarArtists, getAlbumTags, getTopAlbumsWithYears } from '@/lib/lastfm'
 import { parseJson } from '@/lib/albums'
 
 const OPUS = 'claude-opus-4-7'
@@ -172,14 +172,13 @@ export async function saveProfileSetupAction(formData: FormData) {
 
 // ── recommendations ───────────────────────────────────────────────────────────
 
-export async function generateRecommendationsAction(prompt: string, tasteWeight = 100) {
-  const weight = Math.max(0, Math.min(100, tasteWeight))
+export async function generateRecommendationsAction(prompt: string, useTasteProfile = true) {
   const profile = await db.tasteProfile.findFirst()
 
   const ratedAlbums = await db.album.findMany({
     where: { status: 'listened' },
     orderBy: { listenedAt: 'desc' },
-    select: { artist: true, title: true },
+    select: { artist: true, title: true, rating: true },
   })
   const ratedKeys = new Set(ratedAlbums.map(a => `${a.artist.toLowerCase()}|${a.title.toLowerCase()}`))
 
@@ -197,23 +196,20 @@ export async function generateRecommendationsAction(prompt: string, tasteWeight 
   })).map(a => a.artist).filter((v, i, arr) => arr.indexOf(v) === i).join(', ')
 
   const request = prompt.trim() || "Surprise me — pick whatever you think I'd love most right now."
+  const isSurpriseMe = request === "Surprise me — pick whatever you think I'd love most right now."
 
-  // The taste-profile slider controls how strongly the listener's history should steer
-  // picks — low values mean "surprise me, ignore my usual patterns."
-  const pSection = weight >= 15 ? profileSection(profile) : 'Ignored per listener preference for this batch — favor exploring outside their usual taste.'
-  const tasteGuidance = weight >= 70
-    ? "Lean heavily on the listener's taste profile below — most picks should clearly fit it."
-    : weight >= 30
-    ? "Use the listener's taste profile below as a loose guide, but don't let it override the request — prioritize variety and the explicit request over strict profile fit."
-    : "Mostly ignore the listener's taste profile below — favor exploring outside their usual patterns and prioritize the explicit request."
+  // The taste-profile toggle controls whether the listener's history/profile steers picks
+  // at all. Off means a request like "80s music" should return any 80s music, even genres
+  // their profile would otherwise steer away from.
+  const pSection = useTasteProfile ? profileSection(profile) : null
 
   // Ground Pass 1 in real "fans of X also like Y" data from a couple of known-liked
   // seed artists, so suggestions aren't purely the LLM's own parametric memory.
   // This is inspiration, not a hard restriction — Claude can still pick outside it
-  // when the request calls for something unrelated to past taste. Skipped at low taste
-  // weight since it's itself a taste-profile-driven signal.
+  // when the request calls for something unrelated to past taste. Skipped when the
+  // taste-profile toggle is off, since it's itself a taste-profile-driven signal.
   const favoriteArtists = parseJson<string[]>(profile?.favoriteArtists ?? '[]', [])
-  const seedArtists = weight >= 30 ? (favoriteArtists.length ? favoriteArtists : historyArtistsArr).slice(0, 3) : []
+  const seedArtists = useTasteProfile ? (favoriteArtists.length ? favoriteArtists : historyArtistsArr).slice(0, 3) : []
   const similarPool = (await Promise.all(seedArtists.map(a => getSimilarArtists(a, 8))))
     .flat()
     .filter((v, i, arr) => arr.indexOf(v) === i)
@@ -221,27 +217,57 @@ export async function generateRecommendationsAction(prompt: string, tasteWeight 
     .slice(0, 15)
     .join(', ')
 
-  // If the request names a specific artist, get Last.fm similar-artist data for them
-  // directly — this is the primary signal for "like X" requests.
-  let requestAnchorArtist: string | null = null
+  // Parse the request for named artist(s), a specific album/era reference, and explicit
+  // mood/energy words — three different signals that each need different grounding.
+  let requestAnchorArtists: string[] = []
   let requestAnchorPool = ''
-  if (request !== "Surprise me — pick whatever you think I'd love most right now.") {
-    const extraction = await callClaudeJson<{ artist: string | null }>(
-      `Extract the primary artist name from this music request. Return null if no specific artist is named.\n\nRequest: "${request}"\n\nReturn ONLY valid JSON, no markdown: {"artist": "Artist Name"} or {"artist": null}`,
-      { model: HAIKU, maxTokens: 64 }
-    ).catch(() => ({ artist: null }))
-    if (extraction.artist) {
-      requestAnchorArtist = extraction.artist
-      const anchorSimilar = await getSimilarArtists(extraction.artist, 15)
-      requestAnchorPool = anchorSimilar
-        .filter(a => !historyArtistsArr.some(h => h.toLowerCase() === a.toLowerCase()))
-        .slice(0, 15)
-        .join(', ')
+  let albumContext: string | null = null
+  let moodPool = ''
+  if (!isSurpriseMe) {
+    const extraction = await callClaudeJson<{ artists: string[]; albumContext: string | null; moodKeywords: string[] }>(
+      `Analyze this music request and extract structured signals.\n\nRequest: "${request}"\n\n- "artists": named artist(s) mentioned (0-3), spelled as they'd appear in a music database. Empty array if none.\n- "albumContext": if the request names or implies a SPECIFIC album or era of an artist (e.g. "Editors - In Dream", "Radiohead's Kid A era") rather than the artist's catalog in general, the literal album/era text as written — otherwise null. Do not editorialize, just extract it.\n- "moodKeywords": explicit mood/energy descriptor words from the request (e.g. "energetic", "chill", "melancholic", "upbeat") — empty array if none.\n\nReturn ONLY valid JSON, no markdown:\n{"artists": ["Artist Name"], "albumContext": "..." or null, "moodKeywords": ["..."]}`,
+      { model: HAIKU, maxTokens: 200 }
+    ).catch(() => ({ artists: [], albumContext: null, moodKeywords: [] }))
+
+    requestAnchorArtists = extraction.artists ?? []
+    albumContext = extraction.albumContext || null
+
+    if (requestAnchorArtists.length) {
+      requestAnchorPool = (await getBlendedSimilarArtists(requestAnchorArtists, historyArtistsArr, 15)).join(', ')
+    }
+
+    // Mood/energy grounding from the listener's OWN highly-rated albums: check which of
+    // them carry a matching Last.fm tag, then seed the similar-artist pool from those
+    // specific artists rather than favorites in general. Skipped with the taste-profile
+    // toggle off, since "what this listener has loved before" is itself a taste signal.
+    if (useTasteProfile && extraction.moodKeywords?.length) {
+      const candidates = ratedAlbums.filter(a => (a.rating ?? 0) >= 7).slice(0, 25)
+      const tagsByAlbum = await Promise.all(candidates.map(a => getAlbumTags(a.artist, a.title)))
+      const moodKeywordsLower = extraction.moodKeywords.map(k => k.toLowerCase())
+      const matchingArtists = candidates
+        .filter((_, i) => tagsByAlbum[i].some(tag => moodKeywordsLower.some(kw => tag.toLowerCase().includes(kw) || kw.includes(tag.toLowerCase()))))
+        .map(a => a.artist)
+        .filter((v, i, arr) => arr.indexOf(v) === i)
+        .slice(0, 5)
+      if (matchingArtists.length) {
+        moodPool = (await getBlendedSimilarArtists(matchingArtists, historyArtistsArr, 15)).join(', ')
+      }
     }
   }
 
+  // When the request points at a specific album/era rather than an artist's catalog in
+  // general, the artist-level similar-artists list reflects the WRONG thing (their whole
+  // discography) — demote it to background color and let Opus lean on its own knowledge
+  // of that specific record instead, since no Last.fm data can distinguish an artist's
+  // outlier album from their usual sound.
+  const anchorFraming = albumContext
+    ? 'background inspiration only — reflects their whole catalog, not necessarily this specific album/era'
+    : requestAnchorArtists.length > 1
+    ? 'Last.fm real data, ranked by overlap across all mentioned artists — "fans of all of them" matches first, start here'
+    : 'the artist they specifically mentioned — Last.fm real data, start here'
+
   // Pass 1: pick artists
-  const p1 = `You are an expert music curator. Based on this listener's taste profile and current request, choose 5 artists whose work they would love.\n\n## Listener's Taste Profile\n${pSection}\n(${tasteGuidance})\n\n${historyArtists ? `## Already listened to (do not suggest these artists again)\n${historyArtists}\n\n` : ''}${recentArtists ? `## Recently recommended (avoid repeating these artists)\n${recentArtists}\n\n` : ''}${requestAnchorPool ? `## Artists similar to ${requestAnchorArtist} (the artist they specifically mentioned — Last.fm real data, start here)\n${requestAnchorPool}\n\n` : similarPool ? `## Real artists similar to ones they already like (optional inspiration)\n${similarPool}\n\n` : ''}## Their Request\n"${request}"\n\nRules:\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), treat it as a strict requirement, not a vibe — every pick must actually satisfy it\n- 5 different artists, no duplicates\n- Vary the suggestions — don't cluster around one sub-genre\n- The reason should be 2-3 sentences specific to this listener's taste\n- If you swap an artist for a related one (e.g. because the first is already listened to), the "artist" field must be the swapped-to artist, not the original\n\nReturn ONLY a JSON array of 5 objects, no markdown:\n[{"artist": "Artist Name", "reason": "Why this fits..."}]`
+  const p1 = `You are an expert music curator. Based on this listener's taste profile and current request, choose 5 artists whose work they would love.\n\n${pSection ? `## Listener's Taste Profile\n${pSection}\n\n` : ''}${historyArtists ? `## Already listened to (do not suggest these artists again)\n${historyArtists}\n\n` : ''}${recentArtists ? `## Recently recommended (avoid repeating these artists)\n${recentArtists}\n\n` : ''}${albumContext ? `## Sonic reference\nThe listener means specifically ${requestAnchorArtists.join(' / ') || 'the artist mentioned'}'s "${albumContext}" — not their catalog in general. Use your own knowledge of what makes that specific album/era distinct (sound, instrumentation, mood, production) as the primary reference point, more than the generic similar-artists data below.\n\n` : ''}${requestAnchorPool ? `## Artists similar to ${requestAnchorArtists.join(', ')} (${anchorFraming})\n${requestAnchorPool}\n\n` : similarPool ? `## Real artists similar to ones they already like (optional inspiration)\n${similarPool}\n\n` : ''}${moodPool ? `## Artists similar to the listener's own highly-rated albums that match this request's mood/energy\n${moodPool}\n\n` : ''}## Their Request\n"${request}"\n\nRules:\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), treat it as a strict requirement, not a vibe — every pick must actually satisfy it\n- 5 different artists, no duplicates\n- Vary the suggestions — don't cluster around one sub-genre\n- The reason should be 2-3 sentences specific to this listener's taste\n- If you swap an artist for a related one (e.g. because the first is already listened to), the "artist" field must be the swapped-to artist, not the original\n\nReturn ONLY a JSON array of 5 objects, no markdown:\n[{"artist": "Artist Name", "reason": "Why this fits..."}]`
 
   const artistPicks = await callClaudeJson<{ artist: string; reason: string }[]>(p1, { model: OPUS })
 
@@ -252,7 +278,7 @@ export async function generateRecommendationsAction(prompt: string, tasteWeight 
       batchId: batch.id,
       level: 'info',
       event: 'pass1_artists',
-      detail: JSON.stringify({ prompt: prompt || '(none)', tasteWeight: weight, count: artistPicks.length, artists: artistPicks, anchorArtist: requestAnchorArtist, anchorPoolUsed: requestAnchorPool || '(none)', similarPoolUsed: similarPool || '(none)' }),
+      detail: JSON.stringify({ prompt: prompt || '(none)', useTasteProfile, count: artistPicks.length, artists: artistPicks, anchorArtists: requestAnchorArtists, albumContext, anchorPoolUsed: requestAnchorPool || '(none)', similarPoolUsed: similarPool || '(none)', moodPoolUsed: moodPool || '(none)' }),
     },
   })
 
@@ -277,7 +303,7 @@ export async function generateRecommendationsAction(prompt: string, tasteWeight 
   }).join('\n')
 
   // Pass 2: pick albums
-  const tasteSummary = profile?.summary ? `\n\nListener taste summary: ${profile.summary.slice(0, 300)}` : ''
+  const tasteSummary = useTasteProfile && profile?.summary ? `\n\nListener taste summary: ${profile.summary.slice(0, 300)}` : ''
   const p2 = `For each artist below, name the single album that would best suit this listener.\n\nTheir request: "${request}"${tasteSummary}\n\nArtists:\n${artistList}\n\nCRITICAL:\n- When an artist has an "Available albums" list, your answer MUST be one of those exact titles — never invent a different one.\n- When no list is given, use the exact album title as it appears in music databases, and only name an album you are certain exists.\n- If the request states a hard constraint (a release year/decade cutoff, energy level, mood, etc.), the album you pick MUST actually satisfy it. The year in parentheses next to each title is verified — trust it over your own memory of the album's era. Only pick a "year unknown" album against a year/decade constraint if you are independently certain of its era and no dated album in the list qualifies. Do not default to an artist's best-known or classic album if it violates the constraint; pick a different, qualifying album from the list instead.\n\nReturn ONLY a JSON array (one object per artist), no markdown:\n[{"artist": "Artist Name", "title": "Exact Album Title", "year": 2017, "genre": "Genre"}]`
 
   const suggestions = await callClaudeJson<{ artist: string; title: string; year?: number; genre?: string }[]>(p2, { model: OPUS })
